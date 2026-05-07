@@ -4,32 +4,66 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+
+// Dashboard - Página inicial
+import Dashboard from "./pages/Dashboard";
+
+// Páginas de Agentes
+import AgentesList from "./pages/Agentes/List";
+import AgentesForm from "./pages/Agentes/Form";
+
+// Páginas de Produtos
+import ProdutosList from "./pages/Produtos/List";
+import ProdutosForm from "./pages/Produtos/Form";
+
+// Páginas de Notas Fiscais
+import NotasFiscaisList from "./pages/NotasFiscais/List";
+import NotasFiscaisForm from "./pages/NotasFiscais/Form";
+
+// Páginas de Pagamentos
+import PagamentosList from "./pages/Pagamentos/List";
+
+// Páginas de Relatórios
+import RelatoriosList from "./pages/Relatorios/List";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      {/* Dashboard - Página inicial */}
+      <Route path={"/"} component={Dashboard} />
+      
+      {/* Agentes */}
+      <Route path={"/agentes"} component={AgentesList} />
+      <Route path={"/agentes/novo"} component={AgentesForm} />
+      <Route path={"/agentes/:id"} component={AgentesForm} />
+      
+      {/* Produtos */}
+      <Route path={"/produtos"} component={ProdutosList} />
+      <Route path={"/produtos/novo"} component={ProdutosForm} />
+      <Route path={"/produtos/:id"} component={ProdutosForm} />
+      
+      {/* Notas Fiscais */}
+      <Route path={"/notas-fiscais"} component={NotasFiscaisList} />
+      <Route path={"/notas-fiscais/novo"} component={NotasFiscaisForm} />
+      <Route path={"/notas-fiscais/:id"} component={NotasFiscaisForm} />
+      
+      {/* Pagamentos */}
+      <Route path={"/pagamentos"} component={PagamentosList} />
+      
+      {/* Relatórios */}
+      <Route path={"/relatorios"} component={RelatoriosList} />
+      
+      {/* 404 */}
       <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
           <Router />

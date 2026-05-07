@@ -30,6 +30,7 @@
 - [x] Página de Relatórios com geração de relatório consolidado
 - [x] DashboardLayout com sidebar navigation
 - [x] Componentes reutilizáveis (Card, Button, Input, Select, Textarea)
+- [x] Rotas completas registradas no App.tsx
 
 ## Funcionalidades Adicionais
 - [x] Autenticação com Manus OAuth
@@ -37,8 +38,10 @@
 - [x] Formatação de datas com Intl.DateTimeFormat
 - [x] Filtros de status em Pagamentos (Pendente, Pago, Cancelado)
 - [x] Upload de PDFs de notas fiscais (estrutura pronta para S3)
-- [x] Testes vitest para rotas principais
+- [x] Testes vitest para rotas principais (5 testes passando)
 - [x] Type-safety com tRPC e Zod
+- [x] Dashboard corrigido e funcionando
+- [x] Todas as rotas de navegação funcionando corretamente
 
 ## Próximas Melhorias (Opcional)
 - [ ] Integração com S3 para armazenamento de PDFs

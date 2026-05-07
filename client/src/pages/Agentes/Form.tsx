@@ -3,54 +3,44 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 
-export default function ProdutosForm({ params }: { params?: { id?: string } }) {
+export default function AgentesForm({ params }: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
-  const [formData, setFormData] = useState({
-    nome: "",
-    descricao: "",
-    precoUnitario: 0,
-  });
-
-  const createProduto = trpc.produtos.create.useMutation();
-  const updateProduto = trpc.produtos.update.useMutation();
-  const { data: produto } = trpc.produtos.get.useQuery(
+  const [formData, setFormData] = useState({ nome: "", email: "", telefone: "" });
+  const createAgente = trpc.agentes.create.useMutation();
+  const updateAgente = trpc.agentes.update.useMutation();
+  const { data: agente } = trpc.agentes.get.useQuery(
     { id: params?.id ? parseInt(params.id) : 0 },
     { enabled: !!params?.id }
   );
 
   useEffect(() => {
-    if (produto) {
+    if (agente) {
       setFormData({
-        nome: produto.nome,
-        descricao: produto.descricao || "",
-        precoUnitario: produto.precoUnitario / 100,
+        nome: agente.nome,
+        email: agente.email,
+        telefone: agente.telefone || "",
       });
     }
-  }, [produto]);
+  }, [agente]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (params?.id) {
-        await updateProduto.mutateAsync({
+        await updateAgente.mutateAsync({
           id: parseInt(params.id),
           ...formData,
-          precoUnitario: Math.round(formData.precoUnitario * 100),
         });
       } else {
-        await createProduto.mutateAsync({
-          ...formData,
-          precoUnitario: Math.round(formData.precoUnitario * 100),
-        });
+        await createAgente.mutateAsync(formData);
       }
-      setLocation("/produtos");
+      setLocation("/agentes");
     } catch (error) {
-      console.error("Erro ao salvar produto:", error);
+      console.error("Erro ao salvar agente:", error);
     }
   };
 
@@ -58,12 +48,12 @@ export default function ProdutosForm({ params }: { params?: { id?: string } }) {
     <DashboardLayout>
       <div className="space-y-6 max-w-2xl">
         <h1 className="text-3xl font-bold">
-          {params?.id ? "Editar Produto" : "Novo Produto"}
+          {params?.id ? "Editar Agente" : "Novo Agente"}
         </h1>
 
         <Card>
           <CardHeader>
-            <CardTitle>Informações do Produto</CardTitle>
+            <CardTitle>Informações do Agente</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -78,37 +68,33 @@ export default function ProdutosForm({ params }: { params?: { id?: string } }) {
               </div>
 
               <div>
-                <Label htmlFor="descricao">Descrição</Label>
-                <Textarea
-                  id="descricao"
-                  value={formData.descricao}
-                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  rows={4}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="precoUnitario">Preço Unitário (R$)</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="precoUnitario"
-                  type="number"
-                  step="0.01"
-                  value={formData.precoUnitario}
-                  onChange={(e) =>
-                    setFormData({ ...formData, precoUnitario: parseFloat(e.target.value) })
-                  }
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                 />
               </div>
 
+              <div>
+                <Label htmlFor="telefone">Telefone</Label>
+                <Input
+                  id="telefone"
+                  value={formData.telefone}
+                  onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                />
+              </div>
+
               <div className="flex gap-4">
-                <Button type="submit" disabled={createProduto.isPending || updateProduto.isPending}>
+                <Button type="submit" disabled={createAgente.isPending || updateAgente.isPending}>
                   Salvar
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setLocation("/produtos")}
+                  onClick={() => setLocation("/agentes")}
                 >
                   Cancelar
                 </Button>
