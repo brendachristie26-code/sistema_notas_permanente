@@ -1,0 +1,1 @@
+ALTER TABLE `pagamentos` ADD `dataVencimento` timestamp NOT NULL;

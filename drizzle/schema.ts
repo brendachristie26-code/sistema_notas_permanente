@@ -86,6 +86,7 @@ export const pagamentos = mysqlTable("pagamentos", {
   id: int("id").autoincrement().primaryKey(),
   notaFiscalId: int("notaFiscalId").notNull(),
   status: mysqlEnum("status", ["Pendente", "Pago", "Cancelado"]).default("Pendente").notNull(),
+  dataVencimento: timestamp("dataVencimento").notNull(),
   dataPagamento: timestamp("dataPagamento"),
   observacoes: text("observacoes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

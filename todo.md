@@ -52,3 +52,17 @@
 - [ ] Autenticação de dois fatores
 - [ ] Histórico de alterações
 - [ ] Backup automático de dados
+
+## Filtros Avançados do Dashboard (Concluído)
+- [x] Campo dataVencimento adicionado na tabela de pagamentos
+- [x] Rota tRPC para Pagamentos Pendentes (com filtro de data)
+- [x] Rota tRPC para Próximos Pagamentos (análise diária do próximo mês)
+- [x] Rota tRPC para Pagamentos Realizados
+- [x] Rota tRPC para Notas Emitidas com filtros
+- [x] Componente React para exibir Pagamentos Pendentes
+- [x] Componente ProximosPagamentosChart (gráfico de pizza)
+- [x] Componente React para exibir Próximos Pagamentos com resumo diário
+- [x] Componente React para exibir Pagamentos Realizados
+- [x] Componente React para exibir Notas Emitidas
+- [x] Integração dos filtros no Dashboard
+- [x] Dados de exemplo com datas de vencimento realistas

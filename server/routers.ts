@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
+import { getDb } from "./db";
 import {
   listAgentes,
   getAgenteById,
@@ -26,6 +27,8 @@ import {
   updatePagamento,
   getDashboardStats,
 } from "./db";
+import { eq, gte, lte, and } from "drizzle-orm";
+import { pagamentos, notasFiscais } from "../drizzle/schema";
 
 export const appRouter = router({
   system: systemRouter,
@@ -128,8 +131,8 @@ export const appRouter = router({
     get: protectedProcedure.input(z.object({ id: z.number() })).query(({ input }) => getPagamentoById(input.id)),
     getByNotaId: protectedProcedure.input(z.object({ notaFiscalId: z.number() })).query(({ input }) => getPagamentoByNotaId(input.notaFiscalId)),
     create: protectedProcedure
-      .input(z.object({ notaFiscalId: z.number(), status: z.string().default("Pendente"), observacoes: z.string().optional() }))
-      .mutation(({ input }) => createPagamento({ notaFiscalId: input.notaFiscalId, status: input.status as any, observacoes: input.observacoes })),
+      .input(z.object({ notaFiscalId: z.number(), dataVencimento: z.date(), status: z.string().default("Pendente"), observacoes: z.string().optional() }))
+      .mutation(({ input }) => createPagamento({ notaFiscalId: input.notaFiscalId, dataVencimento: input.dataVencimento, status: input.status as any, observacoes: input.observacoes })),
     update: protectedProcedure
       .input(z.object({ id: z.number(), status: z.string().optional(), dataPagamento: z.date().optional(), observacoes: z.string().optional() }))
       .mutation(({ input }) => updatePagamento(input.id, { status: input.status as any, dataPagamento: input.dataPagamento, observacoes: input.observacoes })),
@@ -137,6 +140,57 @@ export const appRouter = router({
 
   dashboard: router({
     stats: protectedProcedure.query(() => getDashboardStats()),
+    pagamentosPendentes: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      const hoje = new Date();
+      const result = await db.select().from(pagamentos).where(
+        and(
+          eq(pagamentos.status, 'Pendente' as any),
+          lte(pagamentos.dataVencimento, hoje)
+        )
+      );
+      return result;
+    }),
+    pagamentosRealizados: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      const result = await db.select().from(pagamentos).where(
+        eq(pagamentos.status, 'Pago' as any)
+      );
+      return result;
+    }),
+    proximosPagamentos: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return {};
+      const hoje = new Date();
+      const proximoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, hoje.getDate());
+      const fimProximoMes = new Date(proximoMes.getFullYear(), proximoMes.getMonth() + 1, 0);
+      
+      const result = await db.select().from(pagamentos).where(
+        and(
+          gte(pagamentos.dataVencimento, proximoMes),
+          lte(pagamentos.dataVencimento, fimProximoMes),
+          eq(pagamentos.status, 'Pendente' as any)
+        )
+      );
+      
+      const porDia: Record<string, { dia: string, aPagar: number }> = {};
+      result.forEach(item => {
+        const data = new Date(item.dataVencimento);
+        const dia = data.toLocaleDateString('pt-BR');
+        if (!porDia[dia]) {
+          porDia[dia] = { dia, aPagar: 0 };
+        }
+        porDia[dia].aPagar += 1; // Incrementar contagem
+      });
+      return porDia;
+    }),
+    notasEmitidas: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(notasFiscais);
+    }),
   }),
 });
 

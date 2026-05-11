@@ -1,11 +1,21 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
-import { TrendingUp, TrendingDown, FileText, CheckCircle } from "lucide-react";
+import { TrendingUp, TrendingDown, FileText, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import ProximosPagamentosChart from "@/components/ProximosPagamentosChart";
 
 export default function Dashboard() {
   const { data: stats, isLoading } = trpc.dashboard.stats.useQuery();
+  const { data: pagamentosPendentes } = trpc.dashboard.pagamentosPendentes.useQuery();
+  const { data: pagamentosRealizados } = trpc.dashboard.pagamentosRealizados.useQuery();
+  const { data: proximosPagamentos } = trpc.dashboard.proximosPagamentos.useQuery();
+  const { data: notasEmitidas } = trpc.dashboard.notasEmitidas.useQuery();
+
+  const [filtroAtivo, setFiltroAtivo] = useState<'pendentes' | 'realizados' | 'proximos' | 'notas'>('pendentes');
+  const [expandirFiltro, setExpandirFiltro] = useState(true);
 
   if (isLoading) {
     return (
@@ -35,7 +45,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatCurrency((stats?.totalPendente || 0) / 100)}
+                {formatCurrency((stats?.totalAPagar || 0) / 100)}
               </div>
               <p className="text-xs text-gray-500 mt-1">Notas pendentes</p>
             </CardContent>
@@ -66,7 +76,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.contagemPendente || 0}</div>
+              <div className="text-2xl font-bold">{stats?.notasPendentes || 0}</div>
               <p className="text-xs text-gray-500 mt-1">Aguardando pagamento</p>
             </CardContent>
           </Card>
@@ -80,16 +90,165 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {stats && stats.totalPago + stats.totalPendente > 0
-                  ? Math.round((stats.totalPago / (stats.totalPago + stats.totalPendente)) * 100)
-                  : 0}
-                %
-              </div>
+              <div className="text-2xl font-bold">{stats?.taxaRecebimento || 0}%</div>
               <p className="text-xs text-gray-500 mt-1">Do total faturado</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Filtros Avançados */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Filtros Avançados</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setExpandirFiltro(!expandirFiltro)}
+            >
+              {expandirFiltro ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </CardHeader>
+          
+          {expandirFiltro && (
+            <>
+              <CardContent className="border-t pt-4">
+                <div className="flex gap-2 mb-4 flex-wrap">
+                  <Button
+                    variant={filtroAtivo === 'pendentes' ? 'default' : 'outline'}
+                    onClick={() => setFiltroAtivo('pendentes')}
+                  >
+                    Pagamentos Pendentes
+                  </Button>
+                  <Button
+                    variant={filtroAtivo === 'realizados' ? 'default' : 'outline'}
+                    onClick={() => setFiltroAtivo('realizados')}
+                  >
+                    Pagamentos Realizados
+                  </Button>
+                  <Button
+                    variant={filtroAtivo === 'proximos' ? 'default' : 'outline'}
+                    onClick={() => setFiltroAtivo('proximos')}
+                  >
+                    Próximos Pagamentos
+                  </Button>
+                  <Button
+                    variant={filtroAtivo === 'notas' ? 'default' : 'outline'}
+                    onClick={() => setFiltroAtivo('notas')}
+                  >
+                    Notas Emitidas
+                  </Button>
+                </div>
+
+                {/* Pagamentos Pendentes */}
+                {filtroAtivo === 'pendentes' && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm mb-3">Pagamentos Pendentes</h3>
+                    {pagamentosPendentes && pagamentosPendentes.length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {pagamentosPendentes.map((item: any) => (
+                          <div key={item.id} className="p-2 bg-red-50 rounded text-sm">
+                            <div className="flex justify-between">
+                              <span className="font-medium">Nota #{item.notaFiscalId}</span>
+                              <span className="text-red-600 font-semibold">Pendente</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Nenhum pagamento pendente</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Pagamentos Realizados */}
+                {filtroAtivo === 'realizados' && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm mb-3">Pagamentos Realizados</h3>
+                    {pagamentosRealizados && pagamentosRealizados.length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {pagamentosRealizados.map((item: any) => (
+                          <div key={item.id} className="p-2 bg-green-50 rounded text-sm">
+                            <div className="flex justify-between">
+                              <span className="font-medium">Nota #{item.notaFiscalId}</span>
+                              <span className="text-green-600 font-semibold">Pago</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Nenhum pagamento realizado</p>
+                    )}
+                  </div>
+                )}
+                {/* Próximos Pagamentos */}
+                {filtroAtivo === 'proximos' && (
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-sm">Próximos Pagamentos (Próximo Mês)</h3>
+                    {proximosPagamentos && Object.keys(proximosPagamentos).length > 0 ? (
+                      <>
+                        <ProximosPagamentosChart data={proximosPagamentos} />
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {Object.entries(proximosPagamentos).map(([dia, dados]: any) => (
+                            <div key={dia} className="p-2 bg-blue-50 rounded text-sm">
+                              <div className="font-medium text-blue-900">{dia}</div>
+                              <div className="text-blue-700 text-xs mt-1">
+                                {dados.aPagar} nota(s) para pagar
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Nenhum pagamento previsto para o próximo mês</p>
+                    )}
+                  </div>
+                )}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                {/* Notas Emitidas */}
+                {filtroAtivo === 'notas' && (
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm mb-3">Notas Emitidas</h3>
+                    {notasEmitidas && notasEmitidas.length > 0 ? (
+                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                        {notasEmitidas.map((item: any) => (
+                          <div key={item.id} className="p-2 bg-gray-50 rounded text-sm">
+                            <div className="flex justify-between">
+                              <span className="font-medium">Nota #{item.numero}</span>
+                              <span className="text-gray-600">{formatCurrency((item.valorTotal || 0) / 100)}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">Nenhuma nota emitida</p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </>
+          )}
+        </Card>
 
         {/* Informações Adicionais */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -27,9 +27,15 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
+import { FileText, DollarSign, BarChart3 } from "lucide-react";
+
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: Users, label: "Agentes", path: "/agentes" },
+  { icon: FileText, label: "Produtos", path: "/produtos" },
+  { icon: FileText, label: "Notas Fiscais", path: "/notas-fiscais" },
+  { icon: DollarSign, label: "Pagamentos", path: "/pagamentos" },
+  { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
