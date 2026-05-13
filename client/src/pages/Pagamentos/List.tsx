@@ -14,11 +14,18 @@ export default function PagamentosList() {
 
   const handleConfirmarPagamento = async (id: number) => {
     if (confirm("Confirmar pagamento?")) {
-      await updatePagamento.mutateAsync({
-        id,
-        status: "Pago",
-        dataPagamento: new Date(),
-      });
+      try {
+        await updatePagamento.mutateAsync({
+          id,
+          status: "Pago",
+          dataPagamento: new Date(),
+        });
+        // Recarregar a lista após confirmar
+        window.location.reload();
+      } catch (error) {
+        alert("Erro ao confirmar pagamento. Tente novamente.");
+        console.error(error);
+      }
     }
   };
 

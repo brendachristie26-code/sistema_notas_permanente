@@ -66,3 +66,11 @@
 - [x] Componente React para exibir Notas Emitidas
 - [x] Integração dos filtros no Dashboard
 - [x] Dados de exemplo com datas de vencimento realistas
+
+
+## Correções e Novas Funcionalidades (Concluído)
+- [x] Corrigir botão de confirmar pagamento (com reload da página)
+- [x] Implementar geração de PDF para relatórios (com detalhes completos)
+- [x] Adicionar funcionalidade de importar notas fiscais (Excel)
+- [x] Adicionar funcionalidade de exportar notas fiscais (PDF e Excel)
+- [x] Instalar biblioteca xlsx para suporte a Excel
