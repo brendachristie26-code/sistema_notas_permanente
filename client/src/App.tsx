@@ -26,6 +26,7 @@ import PagamentosList from "./pages/Pagamentos/List";
 // Páginas de Relatórios
 import RelatoriosList from "./pages/Relatorios/List";
 import OrcamentosList from "./pages/Orcamentos/List";
+import OrcamentosForm from "./pages/Orcamentos/Form";
 import Configuracoes from "./pages/Configuracoes/Index";
 
 function Router() {
@@ -57,6 +58,8 @@ function Router() {
       
       {/* Orçamentos */}
       <Route path={"/orcamentos"} component={OrcamentosList} />
+      <Route path={"/orcamentos/novo"} component={OrcamentosForm} />
+      <Route path={"/orcamentos/:id/editar"} component={OrcamentosForm} />
       
       {/* Configurações */}
       <Route path={"/configuracoes"} component={Configuracoes} />
