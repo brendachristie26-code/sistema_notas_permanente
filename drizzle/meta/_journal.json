@@ -15,6 +15,13 @@
       "when": 1778503241020,
       "tag": "0001_cloudy_hemingway",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1778771212029,
+      "tag": "0002_wild_korath",
+      "breakpoints": true
     }
   ]
 }

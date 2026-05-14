@@ -192,6 +192,113 @@ export const appRouter = router({
       return db.select().from(notasFiscais);
     }),
   }),
+
+  orcamentos: router({
+    list: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      const { orcamentos } = await import("../drizzle/schema");
+      return db.select().from(orcamentos);
+    }),
+    get: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const { orcamentos } = await import("../drizzle/schema");
+      const result = await db.select().from(orcamentos).where(eq(orcamentos.id, input.id));
+      return result[0] || null;
+    }),
+    create: protectedProcedure
+      .input(z.object({
+        numero: z.string(),
+        agenteId: z.number(),
+        produtoId: z.number(),
+        quantidade: z.number().default(1),
+        valorUnitario: z.number(),
+        valorTotal: z.number(),
+        dataEmissao: z.date(),
+        dataValidade: z.date(),
+        descricao: z.string().optional(),
+        status: z.enum(["Rascunho", "Enviado", "Aceito", "Rejeitado"]).default("Rascunho"),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const { orcamentos } = await import("../drizzle/schema");
+        const result = await db.insert(orcamentos).values(input);
+        return result;
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        numero: z.string().optional(),
+        agenteId: z.number().optional(),
+        produtoId: z.number().optional(),
+        quantidade: z.number().optional(),
+        valorUnitario: z.number().optional(),
+        valorTotal: z.number().optional(),
+        dataEmissao: z.date().optional(),
+        dataValidade: z.date().optional(),
+        descricao: z.string().optional(),
+        status: z.enum(["Rascunho", "Enviado", "Aceito", "Rejeitado"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const { orcamentos } = await import("../drizzle/schema");
+        const { id, ...updateData } = input;
+        const result = await db.update(orcamentos).set(updateData).where(eq(orcamentos.id, id));
+        return result;
+      }),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const { orcamentos } = await import("../drizzle/schema");
+      const result = await db.delete(orcamentos).where(eq(orcamentos.id, input.id));
+      return result;
+    }),
+  }),
+
+  configuracoes: router({
+    get: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return null;
+      const { configuracoes } = await import("../drizzle/schema");
+      const result = await db.select().from(configuracoes).limit(1);
+      return result[0] || null;
+    }),
+    update: protectedProcedure
+      .input(z.object({
+        nomeEmpresa: z.string().optional(),
+        logoUrl: z.string().optional(),
+        logoKey: z.string().optional(),
+        cnpj: z.string().optional(),
+        endereco: z.string().optional(),
+        telefone: z.string().optional(),
+        email: z.string().optional(),
+        website: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const { configuracoes } = await import("../drizzle/schema");
+        
+        // Verificar se já existe configuração
+        const existing = await db.select().from(configuracoes).limit(1);
+        
+        if (existing.length > 0) {
+          // Atualizar
+          const result = await db.update(configuracoes).set(input).where(eq(configuracoes.id, existing[0].id));
+          return result;
+        } else {
+          // Criar nova
+          const result = await db.insert(configuracoes).values({
+            nomeEmpresa: input.nomeEmpresa || "Minha Empresa",
+            ...input,
+          });
+          return result;
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

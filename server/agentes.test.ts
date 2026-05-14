@@ -75,8 +75,8 @@ describe("Dashboard Router", () => {
     const result = await caller.dashboard.stats();
     
     expect(result).toBeDefined();
-    expect(result).toHaveProperty("totalPendente");
+    expect(result).toHaveProperty("totalAPagar");
     expect(result).toHaveProperty("totalPago");
-    expect(result).toHaveProperty("contagemPendente");
+    expect(result).toHaveProperty("notasPendentes");
   });
 });

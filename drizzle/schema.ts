@@ -95,3 +95,47 @@ export const pagamentos = mysqlTable("pagamentos", {
 
 export type Pagamento = typeof pagamentos.$inferSelect;
 export type InsertPagamento = typeof pagamentos.$inferInsert;
+
+/**
+ * Orçamentos - Propostas comerciais
+ */
+export const orcamentos = mysqlTable("orcamentos", {
+  id: int("id").autoincrement().primaryKey(),
+  numero: varchar("numero", { length: 100 }).notNull().unique(),
+  agenteId: int("agenteId").notNull(),
+  produtoId: int("produtoId").notNull(),
+  quantidade: int("quantidade").notNull().default(1),
+  valorUnitario: int("valorUnitario").notNull(),
+  valorTotal: int("valorTotal").notNull(),
+  dataEmissao: timestamp("dataEmissao").notNull(),
+  dataValidade: timestamp("dataValidade").notNull(),
+  descricao: text("descricao"),
+  status: mysqlEnum("status", ["Rascunho", "Enviado", "Aceito", "Rejeitado"]).default("Rascunho").notNull(),
+  arquivoPdfUrl: varchar("arquivoPdfUrl", { length: 512 }),
+  arquivoPdfKey: varchar("arquivoPdfKey", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Orcamento = typeof orcamentos.$inferSelect;
+export type InsertOrcamento = typeof orcamentos.$inferInsert;
+
+/**
+ * Configurações da Empresa - Logo, nome, dados da empresa
+ */
+export const configuracoes = mysqlTable("configuracoes", {
+  id: int("id").autoincrement().primaryKey(),
+  nomeEmpresa: varchar("nomeEmpresa", { length: 255 }).notNull(),
+  logoUrl: varchar("logoUrl", { length: 512 }),
+  logoKey: varchar("logoKey", { length: 512 }),
+  cnpj: varchar("cnpj", { length: 20 }),
+  endereco: text("endereco"),
+  telefone: varchar("telefone", { length: 20 }),
+  email: varchar("email", { length: 320 }),
+  website: varchar("website", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Configuracao = typeof configuracoes.$inferSelect;
+export type InsertConfiguracao = typeof configuracoes.$inferInsert;

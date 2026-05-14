@@ -25,6 +25,8 @@ import PagamentosList from "./pages/Pagamentos/List";
 
 // Páginas de Relatórios
 import RelatoriosList from "./pages/Relatorios/List";
+import OrcamentosList from "./pages/Orcamentos/List";
+import Configuracoes from "./pages/Configuracoes/Index";
 
 function Router() {
   return (
@@ -53,8 +55,14 @@ function Router() {
       {/* Relatórios */}
       <Route path={"/relatorios"} component={RelatoriosList} />
       
-      {/* 404 */}
+      {/* Orçamentos */}
+      <Route path={"/orcamentos"} component={OrcamentosList} />
+      
+      {/* Configurações */}
+      <Route path={"/configuracoes"} component={Configuracoes} />
+      
       <Route path={"/404"} component={NotFound} />
+      {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>
   );

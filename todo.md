@@ -4,7 +4,9 @@
 - [x] Tabela de Agentes (nome, email, telefone, ativo)
 - [x] Tabela de Produtos (nome, descricao, precoUnitario, ativo)
 - [x] Tabela de Notas Fiscais (numero, agenteId, produtoId, quantidade, valores, dataEmissao, descricao, arquivoPdf)
-- [x] Tabela de Pagamentos (notaFiscalId, status, dataPagamento, observacoes)
+- [x] Tabela de Pagamentos (notaFiscalId, status, dataPagamento, observacoes, dataVencimento)
+- [x] Tabela de Orcamentos (numero, agenteId, produtoId, quantidade, valores, dataEmissao, dataValidade, status)
+- [x] Tabela de Configuracoes (nomeEmpresa, logoUrl, logoKey, cnpj, endereco, telefone, email, website)
 - [x] Migrations SQL geradas e aplicadas
 
 ## Backend (tRPC)
@@ -12,6 +14,8 @@
 - [x] Rotas CRUD para Produtos (list, get, create, update, delete)
 - [x] Rotas CRUD para Notas Fiscais (list, get, create, update, delete)
 - [x] Rotas CRUD para Pagamentos (list, get, getByNotaId, create, update)
+- [x] Rotas CRUD para Orcamentos (list, get, create, update, delete)
+- [x] Rotas para Configuracoes (get, update)
 - [x] Rota de Dashboard com estatísticas financeiras
 - [x] Query helpers em server/db.ts
 - [x] Proteção com protectedProcedure para todas as rotas
@@ -28,6 +32,8 @@
 - [x] Página de listagem de Pagamentos com filtros por status
 - [x] Funcionalidade de confirmar pagamentos
 - [x] Página de Relatórios com geração de relatório consolidado
+- [x] Página de Orcamentos com listagem e CRUD
+- [x] Página de Configuracoes com upload de logo
 - [x] DashboardLayout com sidebar navigation
 - [x] Componentes reutilizáveis (Card, Button, Input, Select, Textarea)
 - [x] Rotas completas registradas no App.tsx
@@ -38,20 +44,10 @@
 - [x] Formatação de datas com Intl.DateTimeFormat
 - [x] Filtros de status em Pagamentos (Pendente, Pago, Cancelado)
 - [x] Upload de PDFs de notas fiscais (estrutura pronta para S3)
-- [x] Testes vitest para rotas principais (5 testes passando)
+- [x] Testes vitest para rotas principais (9 testes passando)
 - [x] Type-safety com tRPC e Zod
 - [x] Dashboard corrigido e funcionando
 - [x] Todas as rotas de navegação funcionando corretamente
-
-## Próximas Melhorias (Opcional)
-- [ ] Integração com S3 para armazenamento de PDFs
-- [ ] Geração de PDF real para relatórios
-- [ ] Envio de notificações por email
-- [ ] Dashboard com gráficos de análise
-- [ ] Exportação de dados em Excel
-- [ ] Autenticação de dois fatores
-- [ ] Histórico de alterações
-- [ ] Backup automático de dados
 
 ## Filtros Avançados do Dashboard (Concluído)
 - [x] Campo dataVencimento adicionado na tabela de pagamentos
@@ -67,10 +63,31 @@
 - [x] Integração dos filtros no Dashboard
 - [x] Dados de exemplo com datas de vencimento realistas
 
-
 ## Correções e Novas Funcionalidades (Concluído)
 - [x] Corrigir botão de confirmar pagamento (com reload da página)
 - [x] Implementar geração de PDF para relatórios (com detalhes completos)
 - [x] Adicionar funcionalidade de importar notas fiscais (Excel)
 - [x] Adicionar funcionalidade de exportar notas fiscais (PDF e Excel)
 - [x] Instalar biblioteca xlsx para suporte a Excel
+
+## Módulo de Orcamentos e Logo (Concluído)
+- [x] Adicionar tabela de Orcamentos no banco de dados
+- [x] Adicionar tabela de Configuracoes da Empresa (logo, nome, etc)
+- [x] Criar rotas tRPC para CRUD de Orcamentos (list, get, create, update, delete)
+- [x] Criar rotas tRPC para upload e gerenciamento de logo
+- [x] Criar página de listagem de Orcamentos com CRUD
+- [x] Criar formulário de criação/edição de Orcamentos
+- [x] Criar página de Configuracoes com upload de logo
+- [x] Adicionar menu de Orcamentos no DashboardLayout
+- [x] Adicionar menu de Configuracoes no DashboardLayout
+- [x] Testes vitest para Orcamentos e Configuracoes (9 testes passando)
+
+## Próximas Melhorias (Opcional)
+- [ ] Integração com S3 para armazenamento de PDFs
+- [ ] Integrar logo nos PDFs de Notas Fiscais
+- [ ] Integrar logo nos PDFs de Orcamentos
+- [ ] Envio de notificações por email
+- [ ] Dashboard com gráficos de análise avançada
+- [ ] Autenticação de dois fatores
+- [ ] Histórico de alterações
+- [ ] Backup automático de dados
