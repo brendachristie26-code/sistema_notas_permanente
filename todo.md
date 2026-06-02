@@ -82,8 +82,14 @@
 - [x] Adicionar menu de Configuracoes no DashboardLayout
 - [x] Testes vitest para Orcamentos e Configuracoes (9 testes passando)
 
+## Integração S3 e Logo (Concluído)
+- [x] Rotas tRPC para upload de PDF em S3
+- [x] Rotas tRPC para upload de Logo em S3
+- [x] Biblioteca jspdf instalada e funcionando
+- [x] Geração de PDF para orçamentos com jspdf
+- [x] Estrutura pronta para integrar logo nos PDFs
+
 ## Próximas Melhorias (Opcional)
-- [ ] Integração com S3 para armazenamento de PDFs
 - [ ] Integrar logo nos PDFs de Notas Fiscais
 - [ ] Integrar logo nos PDFs de Orcamentos
 - [ ] Envio de notificações por email

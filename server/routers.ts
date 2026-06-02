@@ -258,6 +258,33 @@ export const appRouter = router({
     }),
   }),
 
+  storage: router({
+    uploadPdf: protectedProcedure
+      .input(z.object({
+        fileName: z.string(),
+        pdfContent: z.string(), // base64 encoded PDF
+      }))
+      .mutation(async ({ input }) => {
+        const { storagePut } = await import("./storage");
+        const buffer = Buffer.from(input.pdfContent, "base64");
+        const key = `pdfs/${Date.now()}-${input.fileName}`;
+        const result = await storagePut(key, buffer, "application/pdf");
+        return result;
+      }),
+    uploadLogo: protectedProcedure
+      .input(z.object({
+        fileName: z.string(),
+        imageContent: z.string(), // base64 encoded image
+      }))
+      .mutation(async ({ input }) => {
+        const { storagePut } = await import("./storage");
+        const buffer = Buffer.from(input.imageContent, "base64");
+        const key = `logos/${input.fileName}`;
+        const result = await storagePut(key, buffer, "image/png");
+        return result;
+      }),
+  }),
+
   configuracoes: router({
     get: protectedProcedure.query(async () => {
       const db = await getDb();
