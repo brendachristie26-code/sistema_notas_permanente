@@ -1,19 +1,28 @@
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Plus, Edit2, Trash2, Download } from "lucide-react";
+import { Plus, Edit2, Trash2, Download, Eye } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import jsPDF from "jspdf";
+import { toast } from "sonner";
+import { generatePDFWithLogo } from "@/lib/pdfGenerator";
 
 export default function OrcamentosList() {
   const [, setLocation] = useLocation();
   const { data: orcamentos, refetch } = trpc.orcamentos.list.useQuery();
+  const { data: agentes } = trpc.agentes.list.useQuery();
+  const { data: produtos } = trpc.produtos.list.useQuery();
+  const { data: config } = trpc.configuracoes.get.useQuery();
+  
   const deleteMutation = trpc.orcamentos.delete.useMutation({
     onSuccess: () => refetch(),
   });
+
+  const [previewOrcamentoId, setPreviewOrcamentoId] = useState<number | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const handleDelete = (id: number) => {
     if (confirm("Tem certeza que deseja deletar este orçamento?")) {
@@ -21,96 +30,84 @@ export default function OrcamentosList() {
     }
   };
 
-  const handleExportPDF = (orcamento: any) => {
+  const handlePreview = async (orcamento: any) => {
     try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      let yPosition = 20;
+      const agente = agentes?.find(a => a.id === orcamento.agenteId);
+      const produto = produtos?.find(p => p.id === orcamento.produtoId);
 
-      // Título
-      doc.setFontSize(18);
-      doc.setFont(undefined, "bold");
-      doc.text(`ORÇAMENTO #${orcamento.numero}`, pageWidth / 2, yPosition, {
-        align: "center",
+      const blob = await generatePDFWithLogo({
+        title: `ORÇAMENTO #${orcamento.numero}`,
+        logoUrl: config?.logoUrl || undefined,
+        nomeEmpresa: config?.nomeEmpresa,
+        endereco: config?.endereco,
+        telefone: config?.telefone,
+        email: config?.email,
+        content: [
+          { label: "Número", value: orcamento.numero },
+          { label: "Agente", value: agente?.nome || "N/A" },
+          { label: "Data Emissão", value: formatDate(orcamento.dataEmissao) },
+          { label: "Data Validade", value: formatDate(orcamento.dataValidade) },
+          { label: "Status", value: orcamento.status },
+        ],
+        items: [
+          {
+            descricao: produto?.nome || "Produto",
+            quantidade: orcamento.quantidade,
+            valorUnitario: orcamento.valorUnitario / 100,
+            valorTotal: orcamento.valorTotal / 100,
+          },
+        ],
       });
-      yPosition += 15;
 
-      // Linha de separação
-      doc.setDrawColor(0);
-      doc.line(20, yPosition - 5, pageWidth - 20, yPosition - 5);
-      yPosition += 10;
-
-      // Informações gerais
-      doc.setFontSize(11);
-      doc.setFont(undefined, "normal");
-      doc.text(
-        `Data de Emissão: ${formatDate(orcamento.dataEmissao)}`,
-        20,
-        yPosition
-      );
-      yPosition += 7;
-      doc.text(
-        `Data de Validade: ${formatDate(orcamento.dataValidade)}`,
-        20,
-        yPosition
-      );
-      yPosition += 7;
-      doc.text(`Status: ${orcamento.status}`, 20, yPosition);
-      yPosition += 15;
-
-      // Seção de detalhes
-      doc.setFontSize(12);
-      doc.setFont(undefined, "bold");
-      doc.text("DETALHES DO ORÇAMENTO", 20, yPosition);
-      yPosition += 10;
-
-      doc.setFont(undefined, "normal");
-      doc.setFontSize(10);
-      doc.text(`Quantidade: ${orcamento.quantidade}`, 20, yPosition);
-      yPosition += 6;
-      doc.text(
-        `Valor Unitário: ${formatCurrency(orcamento.valorUnitario / 100)}`,
-        20,
-        yPosition
-      );
-      yPosition += 6;
-      doc.setFont(undefined, "bold");
-      doc.text(
-        `Valor Total: ${formatCurrency(orcamento.valorTotal / 100)}`,
-        20,
-        yPosition
-      );
-      yPosition += 12;
-
-      // Descrição
-      if (orcamento.descricao) {
-        doc.setFont(undefined, "bold");
-        doc.text("Descrição:", 20, yPosition);
-        yPosition += 6;
-        doc.setFont(undefined, "normal");
-        const descricaoLines = doc.splitTextToSize(
-          orcamento.descricao,
-          pageWidth - 40
-        );
-        doc.text(descricaoLines, 20, yPosition);
-      }
-
-      // Rodapé
-      doc.setFontSize(9);
-      doc.setTextColor(150);
-      doc.text(
-        `Gerado em ${new Date().toLocaleString("pt-BR")}`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: "center" }
-      );
-
-      // Salvar PDF
-      doc.save(`orcamento-${orcamento.numero}.pdf`);
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+      setPreviewOrcamentoId(orcamento.id);
     } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
-      alert("Erro ao gerar PDF. Tente novamente.");
+      console.error("Erro ao gerar preview:", error);
+      toast.error("Erro ao gerar preview do PDF");
+    }
+  };
+
+  const handleExportPDF = async (orcamento: any) => {
+    try {
+      const agente = agentes?.find(a => a.id === orcamento.agenteId);
+      const produto = produtos?.find(p => p.id === orcamento.produtoId);
+
+      const blob = await generatePDFWithLogo({
+        title: `ORÇAMENTO #${orcamento.numero}`,
+        logoUrl: config?.logoUrl || undefined,
+        nomeEmpresa: config?.nomeEmpresa,
+        endereco: config?.endereco,
+        telefone: config?.telefone,
+        email: config?.email,
+        content: [
+          { label: "Número", value: orcamento.numero },
+          { label: "Agente", value: agente?.nome || "N/A" },
+          { label: "Data Emissão", value: formatDate(orcamento.dataEmissao) },
+          { label: "Data Validade", value: formatDate(orcamento.dataValidade) },
+          { label: "Status", value: orcamento.status },
+        ],
+        items: [
+          {
+            descricao: produto?.nome || "Produto",
+            quantidade: orcamento.quantidade,
+            valorUnitario: orcamento.valorUnitario / 100,
+            valorTotal: orcamento.valorTotal / 100,
+          },
+        ],
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orcamento-${orcamento.numero}-${Date.now()}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success("PDF baixado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao fazer download:", error);
+      toast.error("Erro ao fazer download do PDF");
     }
   };
 
@@ -183,13 +180,11 @@ export default function OrcamentosList() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setLocation(`/orcamentos/${orcamento.id}/editar`)
-                      }
+                      onClick={() => handlePreview(orcamento)}
                       className="gap-2"
                     >
-                      <Edit2 className="w-4 h-4" />
-                      Editar
+                      <Eye className="w-4 h-4" />
+                      Preview
                     </Button>
                     <Button
                       variant="outline"
@@ -199,6 +194,17 @@ export default function OrcamentosList() {
                     >
                       <Download className="w-4 h-4" />
                       PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setLocation(`/orcamentos/${orcamento.id}/editar`)
+                      }
+                      className="gap-2"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Editar
                     </Button>
                     <Button
                       variant="destructive"
@@ -216,6 +222,22 @@ export default function OrcamentosList() {
           </div>
         )}
       </div>
+
+      {/* Preview Dialog */}
+      <Dialog open={previewOrcamentoId !== null} onOpenChange={() => setPreviewOrcamentoId(null)}>
+        <DialogContent className="max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Preview do Orçamento</DialogTitle>
+          </DialogHeader>
+          {previewUrl && (
+            <iframe
+              src={previewUrl}
+              className="w-full h-full border-0 rounded"
+              title="Preview PDF"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }

@@ -5,25 +5,44 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { Upload, Save } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export default function Configuracoes() {
   const { data: config } = trpc.configuracoes.get.useQuery();
   const updateMutation = trpc.configuracoes.update.useMutation();
+  const uploadLogoMutation = trpc.storage.uploadLogo.useMutation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
-    nomeEmpresa: config?.nomeEmpresa || "",
-    cnpj: config?.cnpj || "",
-    endereco: config?.endereco || "",
-    telefone: config?.telefone || "",
-    email: config?.email || "",
-    website: config?.website || "",
+    nomeEmpresa: "",
+    cnpj: "",
+    endereco: "",
+    telefone: "",
+    email: "",
+    website: "",
   });
 
-  const [logoPreview, setLogoPreview] = useState<string | null>(config?.logoUrl || null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    if (config) {
+      setFormData({
+        nomeEmpresa: config.nomeEmpresa || "",
+        cnpj: config.cnpj || "",
+        endereco: config.endereco || "",
+        telefone: config.telefone || "",
+        email: config.email || "",
+        website: config.website || "",
+      });
+      if (config.logoUrl) {
+        setLogoPreview(config.logoUrl);
+        setLogoUrl(config.logoUrl);
+      }
+    }
+  }, [config]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -37,17 +56,29 @@ export default function Configuracoes() {
     try {
       setIsUploading(true);
       
-      // Simular upload para S3 (em produção, usar storagePut)
       const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        setLogoPreview(dataUrl);
-        toast.success("Logo carregado com sucesso!");
+      reader.onload = async (event) => {
+        const base64Content = (event.target?.result as string).split(',')[1];
+        if (!base64Content) return;
+        
+        try {
+          const result = await uploadLogoMutation.mutateAsync({
+            fileName: file.name,
+            imageContent: base64Content,
+          });
+          
+          setLogoPreview(result.url);
+          setLogoUrl(result.url);
+          toast.success("Logo carregado com sucesso!");
+        } catch (error) {
+          console.error("Erro ao fazer upload do logo:", error);
+          toast.error("Erro ao fazer upload do logo");
+        }
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error("Erro ao fazer upload do logo:", error);
-      toast.error("Erro ao fazer upload do logo");
+      console.error("Erro ao processar arquivo:", error);
+      toast.error("Erro ao processar arquivo");
     } finally {
       setIsUploading(false);
     }
@@ -57,7 +88,7 @@ export default function Configuracoes() {
     try {
       await updateMutation.mutateAsync({
         ...formData,
-        logoUrl: logoPreview || undefined,
+        logoUrl: logoUrl || undefined,
       });
       toast.success("Configurações salvas com sucesso!");
     } catch (error) {
@@ -107,11 +138,11 @@ export default function Configuracoes() {
               />
               <Button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
+                disabled={isUploading || uploadLogoMutation.isPending}
                 className="w-full"
               >
                 <Upload className="h-4 w-4 mr-2" />
-                {isUploading ? "Carregando..." : "Selecionar Logo"}
+                {isUploading || uploadLogoMutation.isPending ? "Carregando..." : "Selecionar Logo"}
               </Button>
             </CardContent>
           </Card>

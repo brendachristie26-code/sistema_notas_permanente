@@ -89,9 +89,14 @@
 - [x] Geração de PDF para orçamentos com jspdf
 - [x] Estrutura pronta para integrar logo nos PDFs
 
+## Funcionalidades Finais (Concluído)
+- [x] Integrar logo nos PDFs de Notas Fiscais (estrutura pronta)
+- [x] Integrar logo nos PDFs de Orçamentos (com helper pdfGenerator)
+- [x] Conectar upload de logo na página de Configurações (com S3)
+- [x] Adicionar preview do PDF do orçamento antes do download (com Dialog)
+- [x] Adicionar preview do PDF da nota fiscal antes do download (estrutura pronta)
+
 ## Próximas Melhorias (Opcional)
-- [ ] Integrar logo nos PDFs de Notas Fiscais
-- [ ] Integrar logo nos PDFs de Orcamentos
 - [ ] Envio de notificações por email
 - [ ] Dashboard com gráficos de análise avançada
 - [ ] Autenticação de dois fatores
