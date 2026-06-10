@@ -118,5 +118,6 @@ export async function generatePDFWithLogo(options: PDFGeneratorOptions): Promise
   doc.setFont(undefined, 'normal');
   doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')}`, 15, pageHeight - 10);
 
-  return doc.output('blob');
+  const pdfBlob = doc.output('blob') as Blob;
+  return pdfBlob;
 }

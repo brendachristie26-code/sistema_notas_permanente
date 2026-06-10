@@ -98,11 +98,14 @@ export default function OrcamentosList() {
       });
 
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `orcamento-${orcamento.numero}-${Date.now()}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `orcamento-${orcamento.numero}-${Date.now()}.pdf`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
       
       toast.success("PDF baixado com sucesso!");
     } catch (error) {
