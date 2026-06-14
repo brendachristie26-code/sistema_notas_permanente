@@ -128,4 +128,4 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Produtos - CRUD completo funcionando
 - [x] Notas Fiscais - CRUD completo funcionando
 - [x] Orçamentos - CRUD completo funcionando
-- [ ] Pagamentos - CRUD completo (em progresso)
+- [x] Pagamentos - CRUD completo funcionando (11 testes vitest passando)
