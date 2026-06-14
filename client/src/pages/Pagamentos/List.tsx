@@ -1,29 +1,90 @@
-import DashboardLayout from "@/components/DashboardLayout";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useState } from "react";
-import { CheckCircle, Clock } from "lucide-react";
+import { CheckCircle, Clock, Trash2, Edit2, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 export default function PagamentosList() {
   const [statusFiltro, setStatusFiltro] = useState<string | undefined>(undefined);
-  const { data: pagamentos, isLoading } = trpc.pagamentos.list.useQuery({ status: statusFiltro });
-  const updatePagamento = trpc.pagamentos.update.useMutation();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [formData, setFormData] = useState({
+    notaId: "",
+    status: "Pendente",
+    dataPagamento: "",
+    observacoes: "",
+  });
 
-  const handleConfirmarPagamento = async (id: number) => {
-    if (confirm("Confirmar pagamento?")) {
-      try {
+  const { data: pagamentos, isLoading, refetch } = trpc.pagamentos.list.useQuery({ status: statusFiltro });
+  const { data: notas } = trpc.notasFiscais.list.useQuery({});
+  const updatePagamento = trpc.pagamentos.update.useMutation();
+  const deletePagamento = trpc.pagamentos.delete.useMutation();
+  const createPagamento = trpc.pagamentos.create.useMutation();
+
+  const handleOpenForm = (pagamento?: any) => {
+    if (pagamento) {
+      setEditingId(pagamento.id);
+      setFormData({
+        notaId: pagamento.notaId.toString(),
+        status: pagamento.status,
+        dataPagamento: pagamento.dataPagamento ? new Date(pagamento.dataPagamento).toISOString().split('T')[0] : "",
+        observacoes: pagamento.observacoes || "",
+      });
+    } else {
+      setEditingId(null);
+      setFormData({
+        notaId: "",
+        status: "Pendente",
+        dataPagamento: "",
+        observacoes: "",
+      });
+    }
+    setIsFormOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingId) {
         await updatePagamento.mutateAsync({
-          id,
-          status: "Pago",
-          dataPagamento: new Date(),
+          id: editingId,
+          status: formData.status,
+          dataPagamento: formData.dataPagamento ? new Date(formData.dataPagamento) : undefined,
+          observacoes: formData.observacoes,
         });
-        // Recarregar a lista após confirmar
-        window.location.reload();
+        toast.success("Pagamento atualizado com sucesso!");
+      } else {
+        await createPagamento.mutateAsync({
+          notaId: parseInt(formData.notaId),
+          status: formData.status,
+          dataPagamento: formData.dataPagamento ? new Date(formData.dataPagamento) : undefined,
+          observacoes: formData.observacoes,
+        });
+        toast.success("Pagamento criado com sucesso!");
+      }
+      setIsFormOpen(false);
+      refetch();
+    } catch (error) {
+      toast.error("Erro ao salvar pagamento");
+      console.error(error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm("Tem certeza que deseja deletar este pagamento?")) {
+      try {
+        await deletePagamento.mutateAsync({ id });
+        toast.success("Pagamento deletado com sucesso!");
+        refetch();
       } catch (error) {
-        alert("Erro ao confirmar pagamento. Tente novamente.");
+        toast.error("Erro ao deletar pagamento");
         console.error(error);
       }
     }
@@ -47,6 +108,75 @@ export default function PagamentosList() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Pagamentos</h1>
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => handleOpenForm()} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Novo Pagamento
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editingId ? "Editar Pagamento" : "Novo Pagamento"}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nota Fiscal</label>
+                  <Select value={formData.notaId} onValueChange={(value) => setFormData({ ...formData, notaId: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma nota" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {notas?.map((nota: any) => (
+                        <SelectItem key={nota.id} value={nota.id.toString()}>
+                          Nota #{nota.numero}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Status</label>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Pendente">Pendente</SelectItem>
+                      <SelectItem value="Pago">Pago</SelectItem>
+                      <SelectItem value="Cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Data de Pagamento</label>
+                  <Input
+                    type="date"
+                    value={formData.dataPagamento}
+                    onChange={(e) => setFormData({ ...formData, dataPagamento: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Observações</label>
+                  <Input
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                    placeholder="Adicione observações..."
+                  />
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">Salvar</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="flex gap-2">
@@ -79,35 +209,44 @@ export default function PagamentosList() {
               <div className="text-center py-8">Carregando...</div>
             ) : pagamentos && pagamentos.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left font-semibold">ID Nota</th>
-                      <th className="px-4 py-2 text-left font-semibold">Status</th>
-                      <th className="px-4 py-2 text-left font-semibold">Data de Pagamento</th>
-                      <th className="px-4 py-2 text-left font-semibold">Observações</th>
-                      <th className="px-4 py-2 text-right font-semibold">Ações</th>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-semibold">ID Nota</th>
+                      <th className="text-left py-3 px-4 font-semibold">Status</th>
+                      <th className="text-left py-3 px-4 font-semibold">Data de Pagamento</th>
+                      <th className="text-left py-3 px-4 font-semibold">Observações</th>
+                      <th className="text-left py-3 px-4 font-semibold">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {pagamentos.map((pagamento) => (
-                      <tr key={pagamento.id} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium">#{pagamento.notaFiscalId}</td>
-                        <td className="px-4 py-3">{getStatusBadge(pagamento.status)}</td>
-                        <td className="px-4 py-3">
-                          {pagamento.dataPagamento ? formatDate(pagamento.dataPagamento) : "-"}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">{pagamento.observacoes || "-"}</td>
-                        <td className="px-4 py-3 text-right">
-                          {pagamento.status === "Pendente" && (
+                    {pagamentos.map((pagamento: any) => (
+                      <tr key={pagamento.id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-4">#{pagamento.notaId}</td>
+                        <td className="py-3 px-4">{getStatusBadge(pagamento.status)}</td>
+                        <td className="py-3 px-4">{pagamento.dataPagamento ? formatDate(pagamento.dataPagamento) : "-"}</td>
+                        <td className="py-3 px-4">{pagamento.observacoes || "-"}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex gap-2">
                             <Button
+                              variant="ghost"
                               size="sm"
-                              onClick={() => handleConfirmarPagamento(pagamento.id)}
-                              disabled={updatePagamento.isPending}
+                              onClick={() => handleOpenForm(pagamento)}
+                              className="gap-1"
                             >
-                              Confirmar Pagamento
+                              <Edit2 className="h-4 w-4" />
+                              Editar
                             </Button>
-                          )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(pagamento.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Deletar
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -116,7 +255,7 @@ export default function PagamentosList() {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                Nenhum pagamento encontrado.
+                Nenhum pagamento encontrado
               </div>
             )}
           </CardContent>

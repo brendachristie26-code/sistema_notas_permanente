@@ -114,3 +114,18 @@ Todas as funcionalidades principais foram implementadas:
 - [ ] Autenticação de dois fatores
 - [ ] Histórico de alterações
 - [ ] Backup automático de dados
+
+
+## CRUD Completo para Pagamentos (Concluído)
+- [x] Adicionar botão "Novo Pagamento" com formulário
+- [x] Editar Pagamentos com formulário modal
+- [x] Deletar Pagamentos com confirmação
+- [x] Dropdown de Status (Pendente, Pago, Cancelado) com ticks visuais
+- [x] Atualizar status inline na tabela
+
+## Verificação de CRUD em Todos os Módulos
+- [x] Agentes - CRUD completo funcionando
+- [x] Produtos - CRUD completo funcionando
+- [x] Notas Fiscais - CRUD completo funcionando
+- [x] Orçamentos - CRUD completo funcionando
+- [ ] Pagamentos - CRUD completo (em progresso)

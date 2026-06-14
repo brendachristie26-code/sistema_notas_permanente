@@ -222,6 +222,12 @@ export async function updatePagamento(id: number, data: Partial<InsertPagamento>
   return db.update(pagamentos).set(data).where(eq(pagamentos.id, id));
 }
 
+export async function deletePagamento(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(pagamentos).where(eq(pagamentos.id, id));
+}
+
 // ===== FILTROS AVANÇADOS DO DASHBOARD =====
 export async function getPagamentosPendentes() {
   const db = await getDb();

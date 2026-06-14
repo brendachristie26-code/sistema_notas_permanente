@@ -25,6 +25,7 @@ import {
   getPagamentoByNotaId,
   createPagamento,
   updatePagamento,
+  deletePagamento,
   getDashboardStats,
 } from "./db";
 import { eq, gte, lte, and } from "drizzle-orm";
@@ -136,6 +137,9 @@ export const appRouter = router({
     update: protectedProcedure
       .input(z.object({ id: z.number(), status: z.string().optional(), dataPagamento: z.date().optional(), observacoes: z.string().optional() }))
       .mutation(({ input }) => updatePagamento(input.id, { status: input.status as any, dataPagamento: input.dataPagamento, observacoes: input.observacoes })),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ input }) => deletePagamento(input.id)),
   }),
 
   dashboard: router({
