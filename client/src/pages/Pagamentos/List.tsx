@@ -22,8 +22,8 @@ export default function PagamentosList() {
     observacoes: "",
   });
 
-  const { data: pagamentos, isLoading, refetch } = trpc.pagamentos.list.useQuery({ status: statusFiltro });
-  const { data: notas } = trpc.notasFiscais.list.useQuery({});
+  const { data: pagamentos, isLoading, refetch } = trpc.pagamentos.list.useQuery({ status: statusFiltro || undefined });
+  const { data: notas } = trpc.notasFiscais.list.useQuery();
   const updatePagamento = trpc.pagamentos.update.useMutation();
   const deletePagamento = trpc.pagamentos.delete.useMutation();
   const createPagamento = trpc.pagamentos.create.useMutation();
@@ -32,7 +32,7 @@ export default function PagamentosList() {
     if (pagamento) {
       setEditingId(pagamento.id);
       setFormData({
-        notaId: pagamento.notaId.toString(),
+        notaId: pagamento.notaFiscalId ? pagamento.notaFiscalId.toString() : "",
         status: pagamento.status,
         dataPagamento: pagamento.dataPagamento ? new Date(pagamento.dataPagamento).toISOString().split('T')[0] : "",
         observacoes: pagamento.observacoes || "",
@@ -62,9 +62,9 @@ export default function PagamentosList() {
         toast.success("Pagamento atualizado com sucesso!");
       } else {
         await createPagamento.mutateAsync({
-          notaId: parseInt(formData.notaId),
+          notaFiscalId: parseInt(formData.notaId),
           status: formData.status,
-          dataPagamento: formData.dataPagamento ? new Date(formData.dataPagamento) : undefined,
+          dataVencimento: formData.dataPagamento ? new Date(formData.dataPagamento) : new Date(),
           observacoes: formData.observacoes,
         });
         toast.success("Pagamento criado com sucesso!");
@@ -212,7 +212,7 @@ export default function PagamentosList() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-semibold">ID Nota</th>
+                      <th className="text-left py-3 px-4 font-semibold">Nota Fiscal</th>
                       <th className="text-left py-3 px-4 font-semibold">Status</th>
                       <th className="text-left py-3 px-4 font-semibold">Data de Pagamento</th>
                       <th className="text-left py-3 px-4 font-semibold">Observações</th>
@@ -222,7 +222,7 @@ export default function PagamentosList() {
                   <tbody>
                     {pagamentos.map((pagamento: any) => (
                       <tr key={pagamento.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4">#{pagamento.notaId}</td>
+                        <td className="py-3 px-4">#{pagamento.notaFiscalId}</td>
                         <td className="py-3 px-4">{getStatusBadge(pagamento.status)}</td>
                         <td className="py-3 px-4">{pagamento.dataPagamento ? formatDate(pagamento.dataPagamento) : "-"}</td>
                         <td className="py-3 px-4">{pagamento.observacoes || "-"}</td>

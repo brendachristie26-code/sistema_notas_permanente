@@ -38,10 +38,10 @@ export default function NotasFiscaisList() {
       const blob = await generatePDFWithLogo({
         title: `NOTA FISCAL #${nota.numero}`,
         logoUrl: config?.logoUrl || undefined,
-        nomeEmpresa: config?.nomeEmpresa,
-        endereco: config?.endereco,
-        telefone: config?.telefone,
-        email: config?.email,
+        nomeEmpresa: config?.nomeEmpresa || "",
+        endereco: config?.endereco || "",
+        telefone: config?.telefone || "",
+        email: config?.email || "",
         content: [
           { label: "Número", value: nota.numero },
           { label: "Agente", value: agente?.nome || "N/A" },
@@ -75,10 +75,10 @@ export default function NotasFiscaisList() {
       const blob = await generatePDFWithLogo({
         title: `NOTA FISCAL #${nota.numero}`,
         logoUrl: config?.logoUrl || undefined,
-        nomeEmpresa: config?.nomeEmpresa,
-        endereco: config?.endereco,
-        telefone: config?.telefone,
-        email: config?.email,
+        nomeEmpresa: config?.nomeEmpresa || "",
+        endereco: config?.endereco || "",
+        telefone: config?.telefone || "",
+        email: config?.email || "",
         content: [
           { label: "Número", value: nota.numero },
           { label: "Agente", value: agente?.nome || "N/A" },

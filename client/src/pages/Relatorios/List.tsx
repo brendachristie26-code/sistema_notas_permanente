@@ -26,11 +26,11 @@ Hora: ${new Date().toLocaleTimeString("pt-BR")}
 
 RESUMO FINANCEIRO
 -----------------
-Total a Pagar: ${formatCurrency((stats?.totalPendente || 0) / 100)}
+Total a Pagar: ${formatCurrency((stats?.totalAPagar || 0) / 100)}
 Total Pago: ${formatCurrency((stats?.totalPago || 0) / 100)}
-Notas Pendentes: ${stats?.contagemPendente || 0}
-Taxa de Recebimento: ${stats && stats.totalPago + stats.totalPendente > 0
-        ? Math.round((stats.totalPago / (stats.totalPago + stats.totalPendente)) * 100)
+Notas Pendentes: ${stats?.notasPendentes || 0}
+Taxa de Recebimento: ${stats && stats.totalPago + stats.totalAPagar > 0
+        ? Math.round((stats.totalPago / (stats.totalPago + stats.totalAPagar)) * 100)
         : 0}%
 
 NOTAS FISCAIS DETALHADAS
@@ -42,7 +42,7 @@ ${idx + 1}. Nota #${nota.id}
    - Quantidade: ${nota.quantidade}
    - Valor Total: ${formatCurrency(nota.valorTotal / 100)}
    - Data Emissão: ${formatDate(nota.dataEmissao)}
-   - Status: ${nota.status || "Ativo"}
+   - Status: Ativo
 `).join("")}
 
 PAGAMENTOS
@@ -93,7 +93,7 @@ Relatório gerado automaticamente pelo Sistema de Gestão de Notas Fiscais
         "Quantidade": nota.quantidade,
         "Valor Total": formatCurrency(nota.valorTotal / 100),
         "Data Emissão": formatDate(nota.dataEmissao),
-        "Status": nota.status || "Ativo",
+        "Status": "Ativo",
         "Descrição": nota.descricao || ""
       })) || [];
 
@@ -157,7 +157,7 @@ ${idx + 1}. NOTA FISCAL #${nota.id}
    Valor Total: ${formatCurrency(nota.valorTotal / 100)}
    Data Emissão: ${formatDate(nota.dataEmissao)}
    Descrição: ${nota.descricao || "N/A"}
-   Status: ${nota.status || "Ativo"}
+   Status: Ativo
    ---
 `).join("")}
 
@@ -196,11 +196,11 @@ Exportado em: ${new Date().toLocaleString("pt-BR")}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2 text-sm">
-                <p><strong>Total a Pagar:</strong> {formatCurrency((stats?.totalPendente || 0) / 100)}</p>
+                <p><strong>Total a Pagar:</strong> {formatCurrency((stats?.totalAPagar || 0) / 100)}</p>
                 <p><strong>Total Pago:</strong> {formatCurrency((stats?.totalPago || 0) / 100)}</p>
-                <p><strong>Notas Pendentes:</strong> {stats?.contagemPendente || 0}</p>
-                <p><strong>Taxa de Recebimento:</strong> {stats && stats.totalPago + stats.totalPendente > 0
-                  ? Math.round((stats.totalPago / (stats.totalPago + stats.totalPendente)) * 100)
+                <p><strong>Notas Pendentes:</strong> {stats?.notasPendentes || 0}</p>
+                <p><strong>Taxa de Recebimento:</strong> {stats && stats.totalPago + stats.totalAPagar > 0
+                  ? Math.round((stats.totalPago / (stats.totalPago + stats.totalAPagar)) * 100)
                   : 0}%</p>
               </div>
               <Button onClick={handleGerarRelatorioPDF} className="w-full">

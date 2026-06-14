@@ -38,10 +38,10 @@ export default function OrcamentosList() {
       const blob = await generatePDFWithLogo({
         title: `ORÇAMENTO #${orcamento.numero}`,
         logoUrl: config?.logoUrl || undefined,
-        nomeEmpresa: config?.nomeEmpresa,
-        endereco: config?.endereco,
-        telefone: config?.telefone,
-        email: config?.email,
+        nomeEmpresa: config?.nomeEmpresa || "",
+        endereco: config?.endereco || "",
+        telefone: config?.telefone || "",
+        email: config?.email || "",
         content: [
           { label: "Número", value: orcamento.numero },
           { label: "Agente", value: agente?.nome || "N/A" },
@@ -76,10 +76,10 @@ export default function OrcamentosList() {
       const blob = await generatePDFWithLogo({
         title: `ORÇAMENTO #${orcamento.numero}`,
         logoUrl: config?.logoUrl || undefined,
-        nomeEmpresa: config?.nomeEmpresa,
-        endereco: config?.endereco,
-        telefone: config?.telefone,
-        email: config?.email,
+        nomeEmpresa: config?.nomeEmpresa || "",
+        endereco: config?.endereco || "",
+        telefone: config?.telefone || "",
+        email: config?.email || "",
         content: [
           { label: "Número", value: orcamento.numero },
           { label: "Agente", value: agente?.nome || "N/A" },

@@ -191,7 +191,7 @@ export async function listPagamentos(status?: string) {
   if (!db) return [];
   
   if (status) {
-    return db.select().from(pagamentos).where(eq(pagamentos.status, status));
+    return db.select().from(pagamentos).where(eq(pagamentos.status, status as any));
   }
   return db.select().from(pagamentos);
 }

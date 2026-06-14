@@ -58,7 +58,7 @@ export default function OrcamentosForm({ params }: { params?: { id?: string } })
           .toISOString()
           .split("T")[0],
         descricao: orcamento.descricao || "",
-        status: orcamento.status,
+        status: (orcamento.status as any) || "Rascunho",
       });
     }
   }, [orcamento]);
