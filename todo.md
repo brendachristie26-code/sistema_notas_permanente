@@ -240,16 +240,33 @@ Todas as funcionalidades principais foram implementadas:
 
 
 ## FASE 5 - Gráficos e Análises Avançadas (Em Progresso)
-- [ ] Adicionar rotas tRPC para dados de gráficos (receitas, despesas, agentes, categorias)
-- [ ] Instalar Recharts para gráficos
-- [ ] Implementar gráfico de linha: Evolução de Receitas vs Despesas (últimos 30 dias)
-- [ ] Implementar gráfico de pizza: Distribuição de despesas por categoria
-- [ ] Implementar gráfico de barras: Top 5 agentes por volume de vendas
-- [ ] Implementar gráfico de área: Fluxo de caixa acumulado
-- [ ] Adicionar filtros avançados no Dashboard (período, status, fornecedor, categoria, agente)
+
+### FASE 5.1 - Rotas tRPC para Gráficos (Concluído)
+- [x] Adicionar rotas tRPC para dados de gráficos (receitas, despesas, agentes, categorias)
+- [x] Instalar Recharts para gráficos
+
+### FASE 5.2 - Implementar Gráficos (Concluído)
+- [x] Implementar gráfico de linha: Evolução de Receitas vs Despesas
+- [x] Implementar gráfico de pizza: Distribuição de despesas por categoria
+- [x] Implementar gráfico de barras: Top 5 agentes por volume de vendas
+- [x] Cards de Fluxo de Caixa (Receitas, Despesas, Saldo)
+- [x] Filtros de período (7d, 30d, 90d)
+- [x] Seção de Filtros Avançados
+
+### FASE 5.3 - Filtros Avançados (Em Progresso)
+- [ ] Implementar filtros por data (data início/fim)
+- [ ] Implementar filtro por status (Pendente, Pago, Cancelado)
+- [ ] Implementar filtro por fornecedor
+- [ ] Implementar filtro por categoria de despesa
+- [ ] Implementar filtro por agente
+- [ ] Aplicar filtros aos gráficos em tempo real
+
+### FASE 5.4 - Cards de Resumo e Tendências (Em Progresso)
 - [ ] Implementar cards de resumo com tendências (↑ ↓)
 - [ ] Implementar comparação de períodos (este mês vs mês anterior)
 - [ ] Adicionar indicadores de saúde financeira (índice de recebimento, dias para receber)
+
+### FASE 5.5 - Exportação e Finalização (Em Progresso)
 - [ ] Adicionar exportação de dados em PDF/Excel
 - [ ] Criar testes vitest para rotas de gráficos
 - [ ] Validar que todos os testes passam

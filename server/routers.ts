@@ -37,7 +37,7 @@ import {
   listAuditLog,
 } from "./db";
 import { eq, gte, lte, and } from "drizzle-orm";
-import { pagamentos, notasFiscais, despesas, auditLog, orcamentos } from "../drizzle/schema";
+import { pagamentos, notasFiscais, despesas, auditLog, orcamentos, agentes } from "../drizzle/schema";
 
 export const appRouter = router({
   system: systemRouter,
@@ -213,7 +213,7 @@ export const appRouter = router({
       const hoje = new Date();
       const trinta_dias_atras = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
       
-      const dados: Record<string, { data: string, receitas: number, despesas: number }> = {};
+      const dados: Record<string, { timestamp: number, data: string, receitas: number, despesas: number }> = {};
       
       // Processar pagamentos (receitas)
       const pagtos = await db.select().from(pagamentos).where(
@@ -224,8 +224,10 @@ export const appRouter = router({
       );
       
       pagtos.forEach((p: any) => {
-        const data = new Date(p.dataPagamento || new Date()).toLocaleDateString('pt-BR');
-        if (!dados[data]) dados[data] = { data, receitas: 0, despesas: 0 };
+        const dataObj = new Date(p.dataPagamento || new Date());
+        const data = dataObj.toLocaleDateString('pt-BR');
+        const timestamp = dataObj.getTime();
+        if (!dados[data]) dados[data] = { timestamp, data, receitas: 0, despesas: 0 };
         dados[data].receitas += p.valor || 0;
       });
       
@@ -238,12 +240,16 @@ export const appRouter = router({
       );
       
       desp.forEach((d: any) => {
-        const data = new Date(d.dataPagamento || new Date()).toLocaleDateString('pt-BR');
-        if (!dados[data]) dados[data] = { data, receitas: 0, despesas: 0 };
+        const dataObj = new Date(d.dataPagamento || new Date());
+        const data = dataObj.toLocaleDateString('pt-BR');
+        const timestamp = dataObj.getTime();
+        if (!dados[data]) dados[data] = { timestamp, data, receitas: 0, despesas: 0 };
         dados[data].despesas += d.valor || 0;
       });
       
-      return Object.values(dados).sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+      return Object.values(dados)
+        .sort((a, b) => a.timestamp - b.timestamp)
+        .map(({ timestamp, ...rest }) => rest);
     }),
     
     despesasPorCategoria: protectedProcedure.query(async () => {
@@ -265,6 +271,13 @@ export const appRouter = router({
       const db = await getDb();
       if (!db) return [];
       
+      // Buscar todos os agentes
+      const agentesMap = new Map();
+      const agentesData = await db.select().from(agentes);
+      agentesData.forEach((a: any) => {
+        agentesMap.set(a.id, a.nome);
+      });
+      
       const notas = await db.select().from(notasFiscais);
       const porAgente: Record<number, { agenteId: number, total: number }> = {};
       
@@ -279,7 +292,7 @@ export const appRouter = router({
         .map(item => ({
           agenteId: item.agenteId,
           total: item.total,
-          name: `Agente ${item.agenteId}`
+          name: agentesMap.get(item.agenteId) || `Agente ${item.agenteId}`
         }));
     }),
   }),
