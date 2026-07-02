@@ -204,6 +204,84 @@ export const appRouter = router({
       return db.select().from(notasFiscais);
     }),
     fluxoCaixa: protectedProcedure.query(() => getFluxoCaixa()),
+    
+    // Rotas para gráficos
+    receitasDespesasUltimos30Dias: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      
+      const hoje = new Date();
+      const trinta_dias_atras = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      const dados: Record<string, { data: string, receitas: number, despesas: number }> = {};
+      
+      // Processar pagamentos (receitas)
+      const pagtos = await db.select().from(pagamentos).where(
+        and(
+          gte(pagamentos.dataPagamento, trinta_dias_atras),
+          lte(pagamentos.dataPagamento, hoje)
+        )
+      );
+      
+      pagtos.forEach((p: any) => {
+        const data = new Date(p.dataPagamento || new Date()).toLocaleDateString('pt-BR');
+        if (!dados[data]) dados[data] = { data, receitas: 0, despesas: 0 };
+        dados[data].receitas += p.valor || 0;
+      });
+      
+      // Processar despesas
+      const desp = await db.select().from(despesas).where(
+        and(
+          gte(despesas.dataPagamento, trinta_dias_atras),
+          lte(despesas.dataPagamento, hoje)
+        )
+      );
+      
+      desp.forEach((d: any) => {
+        const data = new Date(d.dataPagamento || new Date()).toLocaleDateString('pt-BR');
+        if (!dados[data]) dados[data] = { data, receitas: 0, despesas: 0 };
+        dados[data].despesas += d.valor || 0;
+      });
+      
+      return Object.values(dados).sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+    }),
+    
+    despesasPorCategoria: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      
+      const desp = await db.select().from(despesas);
+      const porCategoria: Record<string, number> = {};
+      
+      desp.forEach((d: any) => {
+        if (!porCategoria[d.categoria]) porCategoria[d.categoria] = 0;
+        porCategoria[d.categoria] += d.valor || 0;
+      });
+      
+      return Object.entries(porCategoria).map(([name, value]) => ({ name, value }));
+    }),
+    
+    topAgentes: protectedProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      
+      const notas = await db.select().from(notasFiscais);
+      const porAgente: Record<number, { agenteId: number, total: number }> = {};
+      
+      notas.forEach((n: any) => {
+        if (!porAgente[n.agenteId]) porAgente[n.agenteId] = { agenteId: n.agenteId, total: 0 };
+        porAgente[n.agenteId].total += n.valor || 0;
+      });
+      
+      return Object.values(porAgente)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5)
+        .map(item => ({
+          agenteId: item.agenteId,
+          total: item.total,
+          name: `Agente ${item.agenteId}`
+        }));
+    }),
   }),
 
   despesas: router({

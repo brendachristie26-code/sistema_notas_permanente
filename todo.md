@@ -237,3 +237,19 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Ocultar menu Auditoria para usuários não-admin
 - [x] TypeScript compilando sem erros
 - [x] Sistema completo e pronto para publicação
+
+
+## FASE 5 - Gráficos e Análises Avançadas (Em Progresso)
+- [ ] Adicionar rotas tRPC para dados de gráficos (receitas, despesas, agentes, categorias)
+- [ ] Instalar Recharts para gráficos
+- [ ] Implementar gráfico de linha: Evolução de Receitas vs Despesas (últimos 30 dias)
+- [ ] Implementar gráfico de pizza: Distribuição de despesas por categoria
+- [ ] Implementar gráfico de barras: Top 5 agentes por volume de vendas
+- [ ] Implementar gráfico de área: Fluxo de caixa acumulado
+- [ ] Adicionar filtros avançados no Dashboard (período, status, fornecedor, categoria, agente)
+- [ ] Implementar cards de resumo com tendências (↑ ↓)
+- [ ] Implementar comparação de períodos (este mês vs mês anterior)
+- [ ] Adicionar indicadores de saúde financeira (índice de recebimento, dias para receber)
+- [ ] Adicionar exportação de dados em PDF/Excel
+- [ ] Criar testes vitest para rotas de gráficos
+- [ ] Validar que todos os testes passam
