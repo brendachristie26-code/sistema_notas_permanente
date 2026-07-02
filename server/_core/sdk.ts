@@ -256,7 +256,7 @@ class SDKServer {
     } as GetUserInfoWithJwtResponse;
   }
 
-  async authenticateRequest(req: Request): Promise<User> {
+  async authenticateRequest(req: Request): Promise<User & { isCron?: boolean; taskUid?: string }> {
     // Regular authentication flow
     const cookies = this.parseCookies(req.headers.cookie);
     const sessionCookie = cookies.get(COOKIE_NAME);
@@ -266,6 +266,33 @@ class SDKServer {
       throw ForbiddenError("Invalid session cookie");
     }
 
+    // Check for cron caller
+    const CRON_OPEN_ID_PREFIX = "cron_";
+    if (session.openId.startsWith(CRON_OPEN_ID_PREFIX)) {
+      try {
+        const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
+        if (!userInfo.taskUid) throw ForbiddenError("Cron session missing task_uid");
+        const now = new Date();
+        return {
+          id: -1,
+          openId: userInfo.openId,
+          name: userInfo.name || "Manus Scheduled Task",
+          email: null,
+          loginMethod: null,
+          role: "user",
+          createdAt: now,
+          updatedAt: now,
+          lastSignedIn: now,
+          taskUid: userInfo.taskUid,
+          isCron: true,
+        } as any;
+      } catch (error) {
+        console.error("[Auth] Failed to authenticate cron:", error);
+        throw ForbiddenError("Failed to authenticate cron");
+      }
+    }
+
+    // Regular user authentication
     const sessionUserId = session.openId;
     const signedInAt = new Date();
     let user = await db.getUserByOpenId(sessionUserId);

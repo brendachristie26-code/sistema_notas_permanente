@@ -7,6 +7,9 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { converterOrcamentosAceitosHandler, arquivarOrcamentosRejeitadosHandler, lembreteOrcamentosVencidosHandler } from "../automation/orcamentos";
+import { gerarPagamentoAutomaticoHandler, lembretesPagamentosVencidosHandler, atualizarStatusPagamentosHandler } from "../automation/pagamentos";
+import { gerarRelatorioDiarioHandler, alertaPagamentosAcimaLimiteHandler, enviarRelatorioPorEmailHandler } from "../automation/relatorios";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -35,6 +38,18 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  
+  // Scheduled tasks / Automation handlers
+  app.post("/api/scheduled/orcamentos-converter-aceitos", converterOrcamentosAceitosHandler);
+  app.post("/api/scheduled/orcamentos-arquivar-rejeitados", arquivarOrcamentosRejeitadosHandler);
+  app.post("/api/scheduled/orcamentos-lembrete-vencidos", lembreteOrcamentosVencidosHandler);
+  app.post("/api/scheduled/pagamentos-gerar-automatico", gerarPagamentoAutomaticoHandler);
+  app.post("/api/scheduled/pagamentos-lembrete-vencidos", lembretesPagamentosVencidosHandler);
+  app.post("/api/scheduled/pagamentos-atualizar-status", atualizarStatusPagamentosHandler);
+  app.post("/api/scheduled/relatorio-diario", gerarRelatorioDiarioHandler);
+  app.post("/api/scheduled/alerta-pagamentos-limite", alertaPagamentosAcimaLimiteHandler);
+  app.post("/api/scheduled/relatorio-email", enviarRelatorioPorEmailHandler);
+  
   // tRPC API
   app.use(
     "/api/trpc",
@@ -43,7 +58,7 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
+  // Development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {

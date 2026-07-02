@@ -141,3 +141,36 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Notas Fiscais - CRUD completo funcionando
 - [x] Orçamentos - CRUD completo funcionando
 - [x] Pagamentos - CRUD completo funcionando (11 testes vitest passando)
+
+
+## Automação de Orçamentos (Concluído)
+- [x] Adicionar coluna schedule_cron_task_uid na tabela de orcamentos
+- [x] Criar handler /api/scheduled/orcamentos-converter-aceitos
+- [x] Criar handler /api/scheduled/orcamentos-arquivar-rejeitados
+- [x] Criar handler /api/scheduled/orcamentos-lembrete-vencidos
+- [x] Implementar lógica de conversão de orçamentos aceitos em notas fiscais
+- [x] Implementar lógica de arquivamento de orçamentos rejeitados
+- [x] Implementar lógica de lembretes de orçamentos vencidos
+
+## Automação de Pagamentos (Concluído)
+- [x] Adicionar coluna schedule_cron_task_uid na tabela de pagamentos
+- [x] Criar handler /api/scheduled/pagamentos-gerar-automatico
+- [x] Criar handler /api/scheduled/pagamentos-lembrete-vencidos
+- [x] Criar handler /api/scheduled/pagamentos-atualizar-status
+- [x] Implementar lógica de geração automática de pagamentos
+- [x] Implementar lógica de lembretes de pagamentos vencidos
+- [x] Implementar lógica de atualização de status de pagamentos
+
+## Automação de Relatórios (Concluído)
+- [x] Criar handler /api/scheduled/relatorio-diario
+- [x] Criar handler /api/scheduled/alerta-pagamentos-limite
+- [x] Criar handler /api/scheduled/relatorio-email
+- [x] Implementar lógica de geração de relatórios consolidados
+- [x] Implementar lógica de alertas de pagamentos acima do limite
+- [x] Implementar lógica de envio de relatórios por email
+
+## Testes de Automação (Concluído)
+- [x] Testes vitest para conversão de orçamentos (3 testes)
+- [x] Testes vitest para geração automática de pagamentos (3 testes)
+- [x] Testes vitest para geração de relatórios (4 testes)
+- [x] 21 testes vitest passando (7 arquivos de teste)

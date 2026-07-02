@@ -89,6 +89,7 @@ export const pagamentos = mysqlTable("pagamentos", {
   dataVencimento: timestamp("dataVencimento").notNull(),
   dataPagamento: timestamp("dataPagamento"),
   observacoes: text("observacoes"),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }).unique(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -113,6 +114,7 @@ export const orcamentos = mysqlTable("orcamentos", {
   status: mysqlEnum("status", ["Rascunho", "Enviado", "Aceito", "Rejeitado"]).default("Rascunho").notNull(),
   arquivoPdfUrl: varchar("arquivoPdfUrl", { length: 512 }),
   arquivoPdfKey: varchar("arquivoPdfKey", { length: 512 }),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }).unique(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
