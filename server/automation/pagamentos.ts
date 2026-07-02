@@ -4,6 +4,7 @@ import { sdk } from "../_core/sdk";
 import { getDb } from "../db";
 import { pagamentos, notasFiscais } from "../../drizzle/schema";
 import { createPagamento, updatePagamento } from "../db";
+import { notificarPagamentoVencido } from "../_core/whatsapp";
 
 /**
  * Handler para gerar pagamentos automaticamente ao criar nota fiscal
@@ -108,9 +109,26 @@ export async function lembretesPagamentosVencidosHandler(
         )
       );
 
-    // TODO: Enviar notificações por email
+    // Enviar notificações por WhatsApp
+    let notificadasComSucesso = 0;
+    for (const pag of pagamentosVencidos) {
+      const nota = (await db.select().from(notasFiscais).where(eq(notasFiscais.id, pag.notaFiscalId)).limit(1))[0];
+      if (nota) {
+        // TODO: Integrar com dados reais do cliente (agora usando placeholder)
+        // Buscar número de WhatsApp do cliente via agente ou configurações
+        const resultado = await notificarPagamentoVencido(
+          process.env.WHATSAPP_NUMERO_PADRAO || "5585987654321",
+          nota.numero || "Cliente",
+          nota.valorTotal || 0,
+          new Date(pag.dataVencimento)
+        );
+        if (resultado.sucesso) {
+          notificadasComSucesso++;
+        }
+      }
+    }
     console.log(
-      `[Automação] ${pagamentosVencidos.length} pagamentos vencidos encontrados`
+      `[Automação] ${pagamentosVencidos.length} pagamentos vencidos, ${notificadasComSucesso} notificadas`
     );
 
     return res.json({

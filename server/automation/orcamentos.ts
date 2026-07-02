@@ -4,6 +4,7 @@ import { sdk } from "../_core/sdk";
 import { getDb } from "../db";
 import { orcamentos, notasFiscais } from "../../drizzle/schema";
 import { createNotaFiscal } from "../db";
+import { notificarOrcamentoAceito, notificarOrcamentoRejeitado } from "../_core/whatsapp";
 
 /**
  * Handler para converter orçamentos aceitos em notas fiscais
@@ -62,6 +63,14 @@ export async function converterOrcamentosAceitosHandler(
       .update(orcamentos)
       .set({ status: "Aceito", updatedAt: new Date() })
       .where(eq(orcamentos.id, orcamento.id));
+
+    // Enviar notificação via WhatsApp
+    await notificarOrcamentoAceito(
+      process.env.WHATSAPP_NUMERO_PADRAO || "5585987654321",
+      orcamento.numero || "Cliente",
+      orcamento.numero,
+      orcamento.valorTotal
+    );
 
     return res.json({
       ok: true,

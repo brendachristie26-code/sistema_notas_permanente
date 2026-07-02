@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure, adminProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { getDb } from "./db";
 import {
@@ -408,8 +408,44 @@ export const appRouter = router({
           });
           return result;
         }
+            }),
+  }),
+
+  auditLog: router({
+    list: adminProcedure
+      .input(z.object({
+        acao: z.string().optional(),
+        entidade: z.string().optional(),
+        dataInicio: z.date().optional(),
+        dataFim: z.date().optional(),
+      }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const { auditLog } = await import("../drizzle/schema");
+        let query = db.select().from(auditLog);
+        
+        if (input.acao) {
+          query = query.where(eq(auditLog.acao, input.acao)) as any;
+        }
+        if (input.entidade) {
+          query = query.where(eq(auditLog.entidade, input.entidade)) as any;
+        }
+        if (input.dataInicio || input.dataFim) {
+          const conditions = [];
+          if (input.dataInicio) {
+            conditions.push(gte(auditLog.createdAt, input.dataInicio));
+          }
+          if (input.dataFim) {
+            conditions.push(lte(auditLog.createdAt, input.dataFim));
+          }
+          if (conditions.length > 0) {
+            query = query.where(and(...conditions)) as any;
+          }
+        }
+        
+        return query.orderBy(auditLog.createdAt);
       }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

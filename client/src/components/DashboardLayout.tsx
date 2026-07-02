@@ -27,9 +27,9 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-import { FileText, DollarSign, BarChart3, Settings, TrendingDown } from "lucide-react";
+import { FileText, DollarSign, BarChart3, Settings, TrendingDown, Shield } from "lucide-react";
 
-const menuItems = [
+const getMenuItems = (userRole?: string) => [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: Users, label: "Agentes", path: "/agentes" },
   { icon: FileText, label: "Produtos", path: "/produtos" },
@@ -38,6 +38,7 @@ const menuItems = [
   { icon: TrendingDown, label: "Despesas", path: "/despesas" },
   { icon: FileText, label: "Orçamentos", path: "/orcamentos" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
+  ...(userRole === "admin" ? [{ icon: Shield, label: "Auditoria", path: "/auditoria" }] : []),
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
 ];
 
@@ -121,6 +122,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const menuItems = getMenuItems(user?.role);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
