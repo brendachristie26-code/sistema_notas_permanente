@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -138,7 +139,8 @@ export default function DespesasList() {
   if (isLoading) return <div className="text-center py-8">Carregando...</div>;
 
   return (
-    <div className="space-y-4">
+    <DashboardLayout>
+      <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Despesas</h1>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -319,6 +321,7 @@ export default function DespesasList() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

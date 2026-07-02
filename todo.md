@@ -121,10 +121,10 @@ Todas as funcionalidades principais foram implementadas:
 - [x] TypeScript compila sem erros
 
 ## Próximas Melhorias (Opcional - Não Escopo Atual)
+- [x] Histórico de alterações (implementado com auditLog)
 - [ ] Envio de notificações por email (requer integração com SendGrid/AWS SES)
 - [ ] Dashboard com gráficos de análise avançada (requer Chart.js/Recharts)
 - [ ] Autenticação de dois fatores (requer SMS/TOTP)
-- [ ] Histórico de alterações (requer audit log)
 - [ ] Backup automático de dados (requer S3/backup service)
 
 
