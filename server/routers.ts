@@ -27,9 +27,17 @@ import {
   updatePagamento,
   deletePagamento,
   getDashboardStats,
+  listDespesas,
+  getDespesaById,
+  createDespesa,
+  updateDespesa,
+  deleteDespesa,
+  getFluxoCaixa,
+  registrarAuditLog,
+  listAuditLog,
 } from "./db";
 import { eq, gte, lte, and } from "drizzle-orm";
-import { pagamentos, notasFiscais } from "../drizzle/schema";
+import { pagamentos, notasFiscais, despesas, auditLog } from "../drizzle/schema";
 
 export const appRouter = router({
   system: systemRouter,
@@ -195,6 +203,52 @@ export const appRouter = router({
       if (!db) return [];
       return db.select().from(notasFiscais);
     }),
+    fluxoCaixa: protectedProcedure.query(() => getFluxoCaixa()),
+  }),
+
+  despesas: router({
+    list: protectedProcedure
+      .input(z.object({ status: z.string().optional() }))
+      .query(({ input }) => listDespesas(input.status)),
+    get: protectedProcedure.input(z.object({ id: z.number() })).query(({ input }) => getDespesaById(input.id)),
+    create: protectedProcedure
+      .input(z.object({
+        descricao: z.string(),
+        categoria: z.enum(["Fornecedor", "Fixo", "Variável", "Imposto", "Outro"]),
+        valor: z.number(),
+        dataVencimento: z.date(),
+        dataPagamento: z.date().optional(),
+        status: z.enum(["Pendente", "Pago", "Cancelado"]).default("Pendente"),
+        observacoes: z.string().optional(),
+        fornecedor: z.string().optional(),
+      }))
+      .mutation(({ input, ctx }) => {
+        registrarAuditLog(ctx.user.id, "criou", "Despesa", 0, JSON.stringify(input));
+        return createDespesa(input as any);
+      }),
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        descricao: z.string().optional(),
+        categoria: z.enum(["Fornecedor", "Fixo", "Variável", "Imposto", "Outro"]).optional(),
+        valor: z.number().optional(),
+        dataVencimento: z.date().optional(),
+        dataPagamento: z.date().optional(),
+        status: z.enum(["Pendente", "Pago", "Cancelado"]).optional(),
+        observacoes: z.string().optional(),
+        fornecedor: z.string().optional(),
+      }))
+      .mutation(({ input, ctx }) => {
+        const { id, ...updateData } = input;
+        registrarAuditLog(ctx.user.id, "editou", "Despesa", id, JSON.stringify(updateData));
+        return updateDespesa(id, updateData as any);
+      }),
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(({ input, ctx }) => {
+        registrarAuditLog(ctx.user.id, "excluiu", "Despesa", input.id);
+        return deleteDespesa(input.id);
+      }),
   }),
 
   orcamentos: router({

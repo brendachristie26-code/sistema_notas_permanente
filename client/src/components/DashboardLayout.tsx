@@ -27,7 +27,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-import { FileText, DollarSign, BarChart3, Settings } from "lucide-react";
+import { FileText, DollarSign, BarChart3, Settings, TrendingDown } from "lucide-react";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -35,6 +35,7 @@ const menuItems = [
   { icon: FileText, label: "Produtos", path: "/produtos" },
   { icon: FileText, label: "Notas Fiscais", path: "/notas-fiscais" },
   { icon: DollarSign, label: "Pagamentos", path: "/pagamentos" },
+  { icon: TrendingDown, label: "Despesas", path: "/despesas" },
   { icon: FileText, label: "Orçamentos", path: "/orcamentos" },
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   { icon: Settings, label: "Configurações", path: "/configuracoes" },

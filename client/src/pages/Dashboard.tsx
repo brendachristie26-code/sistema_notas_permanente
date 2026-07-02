@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils";
-import { TrendingUp, TrendingDown, FileText, CheckCircle, Eye, EyeOff } from "lucide-react";
+import { TrendingUp, TrendingDown, FileText, CheckCircle, Eye, EyeOff, DollarSign } from "lucide-react";
 import { useState } from "react";
 import ProximosPagamentosChart from "@/components/ProximosPagamentosChart";
 
@@ -13,6 +13,7 @@ export default function Dashboard() {
   const { data: pagamentosRealizados } = trpc.dashboard.pagamentosRealizados.useQuery();
   const { data: proximosPagamentos } = trpc.dashboard.proximosPagamentos.useQuery();
   const { data: notasEmitidas } = trpc.dashboard.notasEmitidas.useQuery();
+  const { data: fluxoCaixa } = trpc.dashboard.fluxoCaixa.useQuery();
 
   const [filtroAtivo, setFiltroAtivo] = useState<'pendentes' | 'realizados' | 'proximos' | 'notas'>('pendentes');
   const [expandirFiltro, setExpandirFiltro] = useState(true);
@@ -92,6 +93,56 @@ export default function Dashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{stats?.taxaRecebimento || 0}%</div>
               <p className="text-xs text-gray-500 mt-1">Do total faturado</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Fluxo de Caixa */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-green-500" />
+                Receitas (Mês)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency((fluxoCaixa?.receitas || 0) / 100)}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Pagamentos realizados</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-red-500" />
+                Despesas (Mês)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency((fluxoCaixa?.despesas || 0) / 100)}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Despesas pagas</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-blue-500" />
+                Saldo (Mês)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                (fluxoCaixa?.saldo || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {formatCurrency((fluxoCaixa?.saldo || 0) / 100)}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Receitas - Despesas</p>
             </CardContent>
           </Card>
         </div>

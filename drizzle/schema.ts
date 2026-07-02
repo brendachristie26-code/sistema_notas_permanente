@@ -123,6 +123,22 @@ export type Orcamento = typeof orcamentos.$inferSelect;
 export type InsertOrcamento = typeof orcamentos.$inferInsert;
 
 /**
+ * Log de Auditoria - Histórico de ações
+ */
+export const auditLog = mysqlTable("auditLog", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  acao: varchar("acao", { length: 100 }).notNull(),
+  entidade: varchar("entidade", { length: 100 }).notNull(),
+  entidadeId: int("entidadeId").notNull(),
+  detalhes: text("detalhes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLog.$inferSelect;
+export type InsertAuditLog = typeof auditLog.$inferInsert;
+
+/**
  * Configurações da Empresa - Logo, nome, dados da empresa
  */
 export const configuracoes = mysqlTable("configuracoes", {
@@ -141,3 +157,23 @@ export const configuracoes = mysqlTable("configuracoes", {
 
 export type Configuracao = typeof configuracoes.$inferSelect;
 export type InsertConfiguracao = typeof configuracoes.$inferInsert;
+
+/**
+ * Despesas - Contas a pagar
+ */
+export const despesas = mysqlTable("despesas", {
+  id: int("id").autoincrement().primaryKey(),
+  descricao: varchar("descricao", { length: 255 }).notNull(),
+  categoria: mysqlEnum("categoria", ["Fornecedor", "Fixo", "Variável", "Imposto", "Outro"]).notNull(),
+  valor: int("valor").notNull(),
+  dataVencimento: timestamp("dataVencimento").notNull(),
+  dataPagamento: timestamp("dataPagamento"),
+  status: mysqlEnum("status", ["Pendente", "Pago", "Cancelado"]).default("Pendente").notNull(),
+  observacoes: text("observacoes"),
+  fornecedor: varchar("fornecedor", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Despesa = typeof despesas.$inferSelect;
+export type InsertDespesa = typeof despesas.$inferInsert;

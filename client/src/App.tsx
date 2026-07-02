@@ -23,6 +23,9 @@ import NotasFiscaisForm from "./pages/NotasFiscais/Form";
 // Páginas de Pagamentos
 import PagamentosList from "./pages/Pagamentos/List";
 
+// Páginas de Despesas
+import DespesasList from "./pages/Despesas/List";
+
 // Páginas de Relatórios
 import RelatoriosList from "./pages/Relatorios/List";
 import OrcamentosList from "./pages/Orcamentos/List";
@@ -52,6 +55,9 @@ function Router() {
       
       {/* Pagamentos */}
       <Route path={"/pagamentos"} component={PagamentosList} />
+      
+      {/* Despesas */}
+      <Route path={"/despesas"} component={DespesasList} />
       
       {/* Relatórios */}
       <Route path={"/relatorios"} component={RelatoriosList} />

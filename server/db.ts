@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/mysql2";
-import { eq, gte, lte, and, desc } from "drizzle-orm";
-import { InsertUser, users, agentes, InsertAgente, produtos, InsertProduto, notasFiscais, InsertNotaFiscal, pagamentos, InsertPagamento } from "../drizzle/schema";
+import { eq, gte, lte, and, desc, or } from "drizzle-orm";
+import { InsertUser, users, agentes, InsertAgente, produtos, InsertProduto, notasFiscais, InsertNotaFiscal, pagamentos, InsertPagamento, despesas, InsertDespesa, auditLog, InsertAuditLog } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -416,4 +416,140 @@ export async function getDashboardStats() {
     notasPendentes,
     taxaRecebimento,
   };
+}
+
+
+// ===== DESPESAS =====
+export async function listDespesas(status?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  if (status) {
+    return db.select().from(despesas).where(eq(despesas.status, status as any));
+  }
+  return db.select().from(despesas);
+}
+
+export async function getDespesaById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(despesas).where(eq(despesas.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function createDespesa(data: InsertDespesa) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(despesas).values(data);
+}
+
+export async function updateDespesa(id: number, data: Partial<InsertDespesa>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(despesas).set(data).where(eq(despesas.id, id));
+}
+
+export async function deleteDespesa(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(despesas).where(eq(despesas.id, id));
+}
+
+// ===== FLUXO DE CAIXA =====
+export async function getFluxoCaixa() {
+  const db = await getDb();
+  if (!db) return { receitas: 0, despesas: 0, saldo: 0 };
+
+  const hoje = new Date();
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+
+  // Receitas do mês (pagamentos realizados)
+  const pagamentosPagos = await db
+    .select()
+    .from(pagamentos)
+    .where(
+      and(
+        eq(pagamentos.status, "Pago" as any),
+        gte(pagamentos.dataPagamento, primeiroDia),
+        lte(pagamentos.dataPagamento, ultimoDia)
+      )
+    );
+
+  // Despesas do mês (despesas pagas)
+  const despesasPagas = await db
+    .select()
+    .from(despesas)
+    .where(
+      and(
+        eq(despesas.status, "Pago" as any),
+        gte(despesas.dataPagamento, primeiroDia),
+        lte(despesas.dataPagamento, ultimoDia)
+      )
+    );
+
+  // Calcular receitas somando os valores das notas com pagamentos realizados
+  const receitas = pagamentosPagos.reduce((sum, p) => sum + 1, 0); // Contar pagamentos
+  
+  // Para valores reais, seria necessário fazer um JOIN com notasFiscais
+  // Por enquanto, retornamos a contagem de pagamentos realizados
+  const totalReceitas = pagamentosPagos.length > 0
+    ? await db
+        .select()
+        .from(notasFiscais)
+        .where(
+          or(...pagamentosPagos.map((p) => eq(notasFiscais.id, p.notaFiscalId)))
+        )
+        .then((notas: any[]) => notas.reduce((sum, n) => sum + n.valorTotal, 0))
+    : 0;
+
+  const despesasTotal = despesasPagas.reduce((sum, d) => sum + d.valor, 0);
+  const saldo = totalReceitas - despesasTotal;
+
+  return {
+    receitas: totalReceitas,
+    despesas: despesasTotal,
+    saldo,
+  };
+}
+
+// ===== AUDIT LOG =====
+export async function registrarAuditLog(
+  userId: number,
+  acao: string,
+  entidade: string,
+  entidadeId: number,
+  detalhes?: string
+) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Audit] Cannot register audit log: database not available");
+    return;
+  }
+
+  try {
+    await db.insert(auditLog).values({
+      userId,
+      acao,
+      entidade,
+      entidadeId,
+      detalhes: detalhes || null,
+    });
+  } catch (error) {
+    console.error("[Audit] Failed to register audit log:", error);
+  }
+}
+
+export async function listAuditLog(entidade?: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (entidade) {
+    return db
+      .select()
+      .from(auditLog)
+      .where(eq(auditLog.entidade, entidade))
+      .orderBy(desc(auditLog.createdAt));
+  }
+  return db.select().from(auditLog).orderBy(desc(auditLog.createdAt));
 }

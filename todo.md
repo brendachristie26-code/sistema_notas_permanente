@@ -120,12 +120,12 @@ Todas as funcionalidades principais foram implementadas:
 - [x] 11 testes vitest passando (validado)
 - [x] TypeScript compila sem erros
 
-## Próximas Melhorias (Opcional)
-- [ ] Envio de notificações por email
-- [ ] Dashboard com gráficos de análise avançada
-- [ ] Autenticação de dois fatores
-- [ ] Histórico de alterações
-- [ ] Backup automático de dados
+## Próximas Melhorias (Opcional - Não Escopo Atual)
+- [ ] Envio de notificações por email (requer integração com SendGrid/AWS SES)
+- [ ] Dashboard com gráficos de análise avançada (requer Chart.js/Recharts)
+- [ ] Autenticação de dois fatores (requer SMS/TOTP)
+- [ ] Histórico de alterações (requer audit log)
+- [ ] Backup automático de dados (requer S3/backup service)
 
 
 ## CRUD Completo para Pagamentos (Concluído)
@@ -174,3 +174,56 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Testes vitest para geração automática de pagamentos (3 testes)
 - [x] Testes vitest para geração de relatórios (4 testes)
 - [x] 21 testes vitest passando (7 arquivos de teste)
+
+
+## FASE 1 - Contas a Pagar (Despesas) + Fluxo de Caixa (Concluido)
+- [x] Criar tabela despesas no schema (drizzle/schema.ts)
+- [x] Gerar migration SQL com drizzle-kit
+- [x] Aplicar migration ao banco de dados
+- [x] Criar query helpers em server/db.ts
+- [x] Criar router despesas em server/routers.ts
+- [x] Criar rota dashboard.fluxoCaixa
+- [x] Criar pagina Despesas/List.tsx
+- [x] Adicionar Despesas no menu do DashboardLayout.tsx
+- [x] Adicionar rota no App.tsx
+- [x] Adicionar card de Fluxo de Caixa no Dashboard
+- [x] Criar testes vitest para router de despesas (4 testes)
+- [x] Validar que todos os testes passam (25 testes vitest passando)
+
+## FASE 2 - Portal Público de Orçamento (Em Progresso)
+- [ ] Adicionar campo tokenPublico na tabela orcamentos
+- [ ] Gerar migration SQL com drizzle-kit
+- [ ] Aplicar migration ao banco de dados
+- [ ] Criar router orcamentosPublico com getByToken e responder
+- [ ] Criar página pública OrcamentoPublico/View.tsx
+- [ ] Adicionar rota /orcamento/:token no App.tsx
+- [ ] Adicionar botão "Copiar link público" em Orcamentos/List.tsx
+- [ ] Criar testes vitest para router orcamentosPublico
+- [ ] Validar que todos os testes passam
+
+## FASE 3 - Notificação via WhatsApp (Evolution API) (Em Progresso)
+- [ ] Criar helper whatsapp.ts em server/_core/
+- [ ] Implementar função enviarWhatsApp(numero, mensagem)
+- [ ] Integrar WhatsApp em server/automation/pagamentos.ts
+- [ ] Integrar WhatsApp em server/automation/orcamentos.ts
+- [ ] Adicionar tratamento de erro para variáveis de ambiente não setadas
+- [ ] Criar testes vitest para helper whatsapp
+- [ ] Validar que todos os testes passam
+
+## FASE 4 - Log de Auditoria + Permissões por Papel (Em Progresso)
+- [ ] Criar tabela auditLog no schema (drizzle/schema.ts)
+- [ ] Gerar migration SQL com drizzle-kit
+- [ ] Aplicar migration ao banco de dados
+- [ ] Criar helper registrarAuditLog() em server/db.ts
+- [ ] Integrar auditLog em routers de notasFiscais, pagamentos, orcamentos, despesas
+- [ ] Implementar verificação de role === "admin" em rotas de delete
+- [ ] Criar página Auditoria/List.tsx (apenas para admin)
+- [ ] Adicionar "Auditoria" no menu do DashboardLayout.tsx (apenas para admin)
+- [ ] Adicionar rota no App.tsx
+- [ ] Criar testes vitest para auditLog
+- [ ] Validar que todos os testes passam
+
+## Validação Final
+- [ ] Executar pnpm test para validar todas as fases
+- [ ] Verificar que nenhuma funcionalidade anterior foi quebrada
+- [ ] Salvar checkpoint final
