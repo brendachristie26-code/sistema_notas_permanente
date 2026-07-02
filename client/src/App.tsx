@@ -30,6 +30,7 @@ import DespesasList from "./pages/Despesas/List";
 import RelatoriosList from "./pages/Relatorios/List";
 import OrcamentosList from "./pages/Orcamentos/List";
 import OrcamentosForm from "./pages/Orcamentos/Form";
+import OrcamentosPublicoView from "./pages/OrcamentosPublico/View";
 import Configuracoes from "./pages/Configuracoes/Index";
 
 function Router() {
@@ -66,6 +67,7 @@ function Router() {
       <Route path={"/orcamentos"} component={OrcamentosList} />
       <Route path={"/orcamentos/novo"} component={OrcamentosForm} />
       <Route path={"/orcamentos/:id/editar"} component={OrcamentosForm} />
+      <Route path={"/orcamentos/publico/:token"} component={OrcamentosPublicoView} />
       
       {/* Configurações */}
       <Route path={"/configuracoes"} component={Configuracoes} />

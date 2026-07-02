@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { Plus, Edit2, Trash2, Download, Eye } from "lucide-react";
+import { Plus, Edit2, Trash2, Download, Eye, Share2, Copy } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -23,10 +23,34 @@ export default function OrcamentosList() {
 
   const [previewOrcamentoId, setPreviewOrcamentoId] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [linkPublicoId, setLinkPublicoId] = useState<number | null>(null);
+  const [linkPublico, setLinkPublico] = useState<string | null>(null);
+  
+  const gerarTokenMutation = trpc.orcamentos.gerarTokenPublico.useMutation();
 
   const handleDelete = (id: number) => {
     if (confirm("Tem certeza que deseja deletar este orçamento?")) {
       deleteMutation.mutate({ id });
+    }
+  };
+
+  const handleGerarLinkPublico = async (orcamento: any) => {
+    try {
+      const result = await gerarTokenMutation.mutateAsync({ id: orcamento.id });
+      const url = `${window.location.origin}/orcamentos/publico/${result.token}`;
+      setLinkPublico(url);
+      setLinkPublicoId(orcamento.id);
+      toast.success("Link público gerado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar link:", error);
+      toast.error("Erro ao gerar link público");
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (linkPublico) {
+      navigator.clipboard.writeText(linkPublico);
+      toast.success("Link copiado para a área de transferência!");
     }
   };
 
@@ -210,6 +234,15 @@ export default function OrcamentosList() {
                       Editar
                     </Button>
                     <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleGerarLinkPublico(orcamento)}
+                      className="gap-2"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Link Público
+                    </Button>
+                    <Button
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(orcamento.id)}
@@ -238,6 +271,40 @@ export default function OrcamentosList() {
               className="w-full h-full border-0 rounded"
               title="Preview PDF"
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Link Público Dialog */}
+      <Dialog open={linkPublicoId !== null} onOpenChange={() => setLinkPublicoId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link Público do Orçamento</DialogTitle>
+          </DialogHeader>
+          {linkPublico && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">Compartilhe este link com o cliente:</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={linkPublico}
+                    readOnly
+                    className="flex-1 p-2 border border-gray-300 rounded text-sm"
+                  />
+                  <Button
+                    onClick={handleCopyLink}
+                    className="gap-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copiar
+                  </Button>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                O cliente poderá visualizar e responder ao orçamento através deste link público.
+              </p>
+            </div>
           )}
         </DialogContent>
       </Dialog>

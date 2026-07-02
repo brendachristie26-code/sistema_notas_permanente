@@ -114,6 +114,7 @@ export const orcamentos = mysqlTable("orcamentos", {
   status: mysqlEnum("status", ["Rascunho", "Enviado", "Aceito", "Rejeitado"]).default("Rascunho").notNull(),
   arquivoPdfUrl: varchar("arquivoPdfUrl", { length: 512 }),
   arquivoPdfKey: varchar("arquivoPdfKey", { length: 512 }),
+  tokenPublico: varchar("tokenPublico", { length: 64 }).unique(),
   scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }).unique(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

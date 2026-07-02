@@ -37,7 +37,7 @@ import {
   listAuditLog,
 } from "./db";
 import { eq, gte, lte, and } from "drizzle-orm";
-import { pagamentos, notasFiscais, despesas, auditLog } from "../drizzle/schema";
+import { pagamentos, notasFiscais, despesas, auditLog, orcamentos } from "../drizzle/schema";
 
 export const appRouter = router({
   system: systemRouter,
@@ -314,6 +314,32 @@ export const appRouter = router({
       const result = await db.delete(orcamentos).where(eq(orcamentos.id, input.id));
       return result;
     }),
+    gerarTokenPublico: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const { orcamentos } = await import("../drizzle/schema");
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const result = await db.update(orcamentos).set({ tokenPublico: token }).where(eq(orcamentos.id, input.id));
+      return { token };
+    }),
+    getByToken: publicProcedure.input(z.object({ token: z.string() })).query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const { orcamentos } = await import("../drizzle/schema");
+      const result = await db.select().from(orcamentos).where(eq(orcamentos.tokenPublico, input.token));
+      return result[0] || null;
+    }),
+    responderPublico: publicProcedure
+      .input(z.object({ token: z.string(), status: z.enum(["Aceito", "Rejeitado"]), observacoes: z.string().optional() }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const { orcamentos } = await import("../drizzle/schema");
+        const orcamento = await db.select().from(orcamentos).where(eq(orcamentos.tokenPublico, input.token));
+        if (!orcamento.length) throw new Error("Orçamento não encontrado");
+        const result = await db.update(orcamentos).set({ status: input.status as any }).where(eq(orcamentos.id, orcamento[0].id));
+        return result;
+      }),
   }),
 
   storage: router({

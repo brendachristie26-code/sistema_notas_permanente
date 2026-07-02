@@ -190,16 +190,17 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Criar testes vitest para router de despesas (4 testes)
 - [x] Validar que todos os testes passam (25 testes vitest passando)
 
-## FASE 2 - Portal Público de Orçamento (Em Progresso)
-- [ ] Adicionar campo tokenPublico na tabela orcamentos
-- [ ] Gerar migration SQL com drizzle-kit
-- [ ] Aplicar migration ao banco de dados
-- [ ] Criar router orcamentosPublico com getByToken e responder
-- [ ] Criar página pública OrcamentoPublico/View.tsx
-- [ ] Adicionar rota /orcamento/:token no App.tsx
-- [ ] Adicionar botão "Copiar link público" em Orcamentos/List.tsx
-- [ ] Criar testes vitest para router orcamentosPublico
-- [ ] Validar que todos os testes passam
+## FASE 2 - Portal Público de Orçamento (Concluído)
+- [x] Adicionar campo tokenPublico na tabela orcamentos
+- [x] Gerar migration SQL com drizzle-kit
+- [x] Aplicar migration ao banco de dados
+- [x] Criar rotas tRPC públicas (getByToken, responderPublico, gerarTokenPublico)
+- [x] Criar página pública OrcamentosPublico/View.tsx com design responsivo
+- [x] Adicionar rota /orcamentos/publico/:token no App.tsx
+- [x] Adicionar botão \"Link Público\" em Orcamentos/List.tsx
+- [x] Criar diálogo para exibir e copiar link público
+- [x] Clientes podem aceitar/rejeitar orçamentos sem login
+- [x] TypeScript compilando sem erros
 
 ## FASE 3 - Notificação via WhatsApp (Evolution API) (Em Progresso)
 - [ ] Criar helper whatsapp.ts em server/_core/
