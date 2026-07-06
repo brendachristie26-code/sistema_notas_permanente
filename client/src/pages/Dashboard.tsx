@@ -317,57 +317,7 @@ export default function Dashboard() {
           )}
         </Card>
 
-        {/* Atalhos Rápidos */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Atalhos Rápidos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 mb-4">Use o menu lateral para navegar entre as seções do sistema:</p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>• <strong>Agentes</strong> - Gerencie seus representantes</li>
-              <li>• <strong>Produtos</strong> - Cadastre itens de venda</li>
-              <li>• <strong>Notas Fiscais</strong> - Crie e acompanhe documentos</li>
-              <li>• <strong>Pagamentos</strong> - Controle recebimentos</li>
-              <li>• <strong>Despesas</strong> - Registre gastos</li>
-              <li>• <strong>Orçamentos</strong> - Gerencie propostas</li>
-              <li>• <strong>Relatórios</strong> - Analise dados consolidados</li>
-              <li>• <strong>Auditoria</strong> - Consulte histórico de ações (Admin)</li>
-            </ul>
-          </CardContent>
-        </Card>
 
-        {/* Status do Sistema */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Status do Sistema</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <div>
-                  <p className="font-medium">Banco de Dados</p>
-                  <p className="text-sm text-gray-500">Online</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <div>
-                  <p className="font-medium">Autenticação</p>
-                  <p className="text-sm text-gray-500">Ativa</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <div>
-                  <p className="font-medium">API</p>
-                  <p className="text-sm text-gray-500">Funcionando</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </DashboardLayout>
   );

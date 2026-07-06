@@ -32,7 +32,7 @@ import OrcamentosList from "./pages/Orcamentos/List";
 import OrcamentosForm from "./pages/Orcamentos/Form";
 import OrcamentosPublicoView from "./pages/OrcamentosPublico/View";
 import AuditoriaList from "./pages/Auditoria/List";
-import Configuracoes from "./pages/Configuracoes/Index";
+import Configuracoes from "./pages/Configuracoes";
 
 function Router() {
   return (
@@ -75,8 +75,7 @@ function Router() {
       
       {/* Configurações */}
       <Route path={"/configuracoes"} component={Configuracoes} />
-      
-      <Route path={"/404"} component={NotFound} />
+      <Route path={"*"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
     </Switch>

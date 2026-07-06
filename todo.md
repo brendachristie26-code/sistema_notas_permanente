@@ -252,6 +252,8 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Cards de Fluxo de Caixa (Receitas, Despesas, Saldo)
 - [x] Filtros de período (7d, 30d, 90d)
 - [x] Seção de Filtros Avançados
+- [x] Corrigir nomes de agentes (usar nomes reais em vez de placeholders)
+- [x] Corrigir ordenação de datas (usar timestamp em vez de parse de string)
 
 ### FASE 5.3 - Filtros Avançados (Em Progresso)
 - [ ] Implementar filtros por data (data início/fim)
