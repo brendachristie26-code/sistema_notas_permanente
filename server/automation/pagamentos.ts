@@ -4,7 +4,8 @@ import { sdk } from "../_core/sdk";
 import { getDb } from "../db";
 import { pagamentos, notasFiscais } from "../../drizzle/schema";
 import { createPagamento, updatePagamento } from "../db";
-import { notificarPagamentoVencido } from "../_core/whatsapp";
+import { notificarPagamentoVencido } from "../\_core/whatsapp";
+import { gerarCobrancaPix } from "../\_core/paymentProvider";
 
 /**
  * Handler para gerar pagamentos automaticamente ao criar nota fiscal
@@ -79,8 +80,9 @@ export async function gerarPagamentoAutomaticoHandler(
 }
 
 /**
- * Handler para enviar lembretes de pagamentos vencidos
+ * Handler para enviar lembretes de pagamentos vencidos com Pix
  * Executado diariamente para notificar sobre pagamentos próximos do vencimento
+ * Se o pagamento não tiver Pix gerado, gera automaticamente
  */
 export async function lembretesPagamentosVencidosHandler(
   req: Request,
@@ -109,18 +111,50 @@ export async function lembretesPagamentosVencidosHandler(
         )
       );
 
-    // Enviar notificações por WhatsApp
+    // Enviar notificações por WhatsApp com Pix
     let notificadasComSucesso = 0;
+    let pixGerados = 0;
+    
     for (const pag of pagamentosVencidos) {
       const nota = (await db.select().from(notasFiscais).where(eq(notasFiscais.id, pag.notaFiscalId)).limit(1))[0];
       if (nota) {
+        // Se não tiver Pix gerado, gerar agora
+        let pixCopiaCola = pag.pixCopiaCola;
+        let pixTxid = pag.pixTxid;
+        
+        if (!pixCopiaCola || !pixTxid) {
+          try {
+            const cobranca = await gerarCobrancaPix(
+              nota.valorTotal || 0,
+              `Pagamento Nota Fiscal #${nota.numero}`
+            );
+            
+            // Atualizar pagamento com dados do Pix
+            await db
+              .update(pagamentos)
+              .set({
+                pixTxid: cobranca.txid,
+                pixQrCode: cobranca.qrCode,
+                pixCopiaCola: cobranca.copiaCola,
+              })
+              .where(eq(pagamentos.id, pag.id));
+            
+            pixCopiaCola = cobranca.copiaCola;
+            pixTxid = cobranca.txid;
+            pixGerados++;
+          } catch (err) {
+            console.error(`[Automação] Erro ao gerar Pix para pagamento ${pag.id}:`, err);
+          }
+        }
+        
         // TODO: Integrar com dados reais do cliente (agora usando placeholder)
         // Buscar número de WhatsApp do cliente via agente ou configurações
         const resultado = await notificarPagamentoVencido(
           process.env.WHATSAPP_NUMERO_PADRAO || "5585987654321",
           nota.numero || "Cliente",
           nota.valorTotal || 0,
-          new Date(pag.dataVencimento)
+          new Date(pag.dataVencimento),
+          pixCopiaCola || undefined // Passar Pix Copia e Cola
         );
         if (resultado.sucesso) {
           notificadasComSucesso++;
@@ -128,13 +162,14 @@ export async function lembretesPagamentosVencidosHandler(
       }
     }
     console.log(
-      `[Automação] ${pagamentosVencidos.length} pagamentos vencidos, ${notificadasComSucesso} notificadas`
+      `[Automação] ${pagamentosVencidos.length} pagamentos vencidos, ${notificadasComSucesso} notificadas, ${pixGerados} Pix gerados`
     );
 
     return res.json({
       ok: true,
       message: `${pagamentosVencidos.length} pagamentos vencidos processados`,
       count: pagamentosVencidos.length,
+      pixGerados,
     });
   } catch (error) {
     console.error("[Automação] Erro ao enviar lembretes de pagamentos:", error);

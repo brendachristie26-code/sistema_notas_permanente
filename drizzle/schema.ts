@@ -90,6 +90,10 @@ export const pagamentos = mysqlTable("pagamentos", {
   dataPagamento: timestamp("dataPagamento"),
   observacoes: text("observacoes"),
   scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }).unique(),
+  // Campos para Pix Nativo
+  pixTxid: varchar("pixTxid", { length: 255 }),
+  pixQrCode: text("pixQrCode"),
+  pixCopiaCola: text("pixCopiaCola"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

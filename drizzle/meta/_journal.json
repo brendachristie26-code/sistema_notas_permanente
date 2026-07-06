@@ -43,6 +43,13 @@
       "when": 1783018257741,
       "tag": "0005_normal_pyro",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1783345741607,
+      "tag": "0006_fantastic_silk_fever",
+      "breakpoints": true
     }
   ]
 }

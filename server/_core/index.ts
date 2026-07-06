@@ -10,6 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { converterOrcamentosAceitosHandler, arquivarOrcamentosRejeitadosHandler, lembreteOrcamentosVencidosHandler } from "../automation/orcamentos";
 import { gerarPagamentoAutomaticoHandler, lembretesPagamentosVencidosHandler, atualizarStatusPagamentosHandler } from "../automation/pagamentos";
 import { gerarRelatorioDiarioHandler, alertaPagamentosAcimaLimiteHandler, enviarRelatorioPorEmailHandler } from "../automation/relatorios";
+import { webhookPixHandler, webhookTestHandler } from "../automation/webhooks";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -49,6 +50,10 @@ async function startServer() {
   app.post("/api/scheduled/relatorio-diario", gerarRelatorioDiarioHandler);
   app.post("/api/scheduled/alerta-pagamentos-limite", alertaPagamentosAcimaLimiteHandler);
   app.post("/api/scheduled/relatorio-email", enviarRelatorioPorEmailHandler);
+  
+  // Webhook handlers
+  app.post("/api/webhook/pix", webhookPixHandler);
+  app.post("/api/webhook/test", webhookTestHandler);
   
   // tRPC API
   app.use(

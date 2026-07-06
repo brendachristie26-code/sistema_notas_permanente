@@ -1,4 +1,4 @@
-import { DashboardLayout } from "@/components/DashboardLayout";
+import { Button } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,13 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useState } from "react";
-import { CheckCircle, Clock, Trash2, Edit2, Plus } from "lucide-react";
+import { CheckCircle, Clock, Trash2, Edit2, Plus, Copy, QrCode } from "lucide-react";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import { toast } from "sonner";
 
 export default function PagamentosList() {
   const [statusFiltro, setStatusFiltro] = useState<string | undefined>(undefined);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [pixDialogOpen, setPixDialogOpen] = useState(false);
+  const [selectedPagamento, setSelectedPagamento] = useState<any>(null);
   const [formData, setFormData] = useState({
     notaId: "",
     status: "Pendente",
@@ -27,6 +30,16 @@ export default function PagamentosList() {
   const updatePagamento = trpc.pagamentos.update.useMutation();
   const deletePagamento = trpc.pagamentos.delete.useMutation();
   const createPagamento = trpc.pagamentos.create.useMutation();
+
+  const handleCopyPix = (copiaCola: string) => {
+    navigator.clipboard.writeText(copiaCola);
+    toast.success("Pix copiado para a área de transferência!");
+  };
+
+  const handleShowPixDialog = (pagamento: any) => {
+    setSelectedPagamento(pagamento);
+    setPixDialogOpen(true);
+  };
 
   const handleOpenForm = (pagamento?: any) => {
     if (pagamento) {
@@ -228,6 +241,17 @@ export default function PagamentosList() {
                         <td className="py-3 px-4">{pagamento.observacoes || "-"}</td>
                         <td className="py-3 px-4">
                           <div className="flex gap-2">
+                            {pagamento.status === "Pendente" && pagamento.pixCopiaCola && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleShowPixDialog(pagamento)}
+                                className="gap-1 text-blue-600 hover:text-blue-700"
+                              >
+                                <QrCode className="h-4 w-4" />
+                                Pix
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -260,6 +284,69 @@ export default function PagamentosList() {
             )}
           </CardContent>
         </Card>
+
+        {/* Diálogo Pix */}
+        <Dialog open={pixDialogOpen} onOpenChange={setPixDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>💳 Pix - Copia e Cola</DialogTitle>
+            </DialogHeader>
+            {selectedPagamento && (
+              <div className="space-y-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-2">Valor:</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency(selectedPagamento.notaFiscalId ? 0 : 0)}
+                  </p>
+                </div>
+
+                {selectedPagamento.pixQrCode && (
+                  <div className="bg-white p-4 rounded-lg border border-gray-200">
+                    <p className="text-sm text-gray-600 mb-2">QR Code:</p>
+                    <img 
+                      src={selectedPagamento.pixQrCode} 
+                      alt="QR Code Pix" 
+                      className="w-full h-auto"
+                    />
+                  </div>
+                )}
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-2">Copia e Cola:</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={selectedPagamento.pixCopiaCola || ""}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm font-mono"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => handleCopyPix(selectedPagamento.pixCopiaCola)}
+                      className="gap-1"
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copiar
+                    </Button>
+                  </div>
+                </div>
+
+                {selectedPagamento.pixTxid && (
+                  <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                    <p>ID da Transação: {selectedPagamento.pixTxid}</p>
+                  </div>
+                )}
+
+                <Button 
+                  onClick={() => setPixDialogOpen(false)} 
+                  className="w-full"
+                >
+                  Fechar
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

@@ -97,7 +97,8 @@ export async function notificarPagamentoVencido(
   numero: string,
   nomeCliente: string,
   valor: number,
-  dataVencimento: Date
+  dataVencimento: Date,
+  pixCopiaCola?: string
 ): Promise<EnviarWhatsAppResponse> {
   const dataFormatada = dataVencimento.toLocaleDateString("pt-BR");
   const valorFormatado = (valor / 100).toLocaleString("pt-BR", {
@@ -105,10 +106,18 @@ export async function notificarPagamentoVencido(
     currency: "BRL",
   });
 
+  let mensagem = `Olá ${nomeCliente},\n\nSeu pagamento de ${valorFormatado} venceu em ${dataFormatada}.\n\n`;
+  
+  if (pixCopiaCola) {
+    mensagem += `💳 *Pix Copia e Cola:*\n${pixCopiaCola}\n\n`;
+  }
+  
+  mensagem += `Por favor, regularize sua situação.\n\nObrigado!`;
+
   return enviarWhatsApp({
     numero,
     titulo: "⚠️ Pagamento Vencido",
-    mensagem: `Olá ${nomeCliente},\n\nSeu pagamento de ${valorFormatado} venceu em ${dataFormatada}.\n\nPor favor, regularize sua situação.\n\nObrigado!`,
+    mensagem,
   });
 }
 
@@ -161,5 +170,36 @@ export async function enviarLinkOrcamento(
     numero,
     titulo: "📋 Novo Orçamento",
     mensagem: `Olá ${nomeCliente},\n\nTemos um novo orçamento para você!\n\n*Orçamento #${numeroOrcamento}*\n\nClique no link abaixo para visualizar e responder:\n${linkPublico}\n\nObrigado!`,
+  });
+}
+
+/**
+ * Envia notificação de pagamento recebido via WhatsApp
+ */
+export async function notificarPagamentoRecebido(
+  numero: string,
+  nomeCliente: string,
+  valor: number,
+  dataPagamento: Date,
+  txid?: string
+): Promise<EnviarWhatsAppResponse> {
+  const dataFormatada = dataPagamento.toLocaleDateString("pt-BR");
+  const valorFormatado = (valor / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+
+  let mensagem = `Olá ${nomeCliente},\n\n✅ Seu pagamento de ${valorFormatado} foi recebido com sucesso em ${dataFormatada}.\n\n`;
+  
+  if (txid) {
+    mensagem += `📋 *ID da Transação:* ${txid}\n\n`;
+  }
+  
+  mensagem += `Obrigado!`;
+
+  return enviarWhatsApp({
+    numero,
+    titulo: "✅ Pagamento Recebido",
+    mensagem,
   });
 }
