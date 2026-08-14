@@ -437,4 +437,33 @@ export const workspaceRouter = router({
 
       return { success: true, importedCount, errorsCount };
     }),
+
+  previewMembersCsv: adminTenantProcedure
+    .input(z.object({ csvData: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const lines = input.csvData.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      const valid: string[] = [];
+      const notFound: string[] = [];
+      const invalid: string[] = [];
+
+      for (const line of lines) {
+        const email = line.replace(/^["']|["']$/g, "").trim();
+        if (!email || !email.includes("@")) {
+          invalid.push(line);
+          continue;
+        }
+
+        const userRecord = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        if (userRecord.length === 0) {
+          notFound.push(email);
+        } else {
+          valid.push(email);
+        }
+      }
+
+      return { valid, notFound, invalid, total: lines.length };
+    }),
 });

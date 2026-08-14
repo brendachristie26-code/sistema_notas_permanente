@@ -326,3 +326,9 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Implementar componente de upload e importação CSV de membros na tela de equipe
 - [x] Reforçar toasts de feedback nas exportações PDF/CSV
 - [x] Criar testes Vitest para tendências temporais e importação CSV de membros
+
+
+## Novas Funcionalidades — Pré-visualização de Importação CSV
+- [x] Adicionar rota backend `previewMembersCsv` para validar e classificar e-mails válidos e inválidos
+- [x] Construir modal/etapa de pré-visualização na tela de equipe antes de confirmar a importação
+- [x] Criar testes Vitest para a pré-visualização de CSV

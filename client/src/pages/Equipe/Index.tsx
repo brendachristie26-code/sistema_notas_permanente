@@ -19,6 +19,7 @@ export default function EquipePage() {
   const workspaces = trpc.workspace.listMyWorkspaces.useQuery();
   const members = trpc.workspace.listMembers.useQuery(undefined, { retry: false });
   const [invitePage, setInvitePage] = useState(1);
+  const [csvPreviewData, setCsvPreviewData] = useState<{ valid: string[]; notFound: string[]; invalid: string[]; total: number; rawText: string } | null>(null);
   const invites = trpc.workspace.listInvites.useQuery({ page: invitePage, pageSize: 5 }, { retry: false });
   const createWorkspace = trpc.workspace.create.useMutation({
     onSuccess: result => {
@@ -56,9 +57,19 @@ export default function EquipePage() {
     onError: error => toast.error(error.message),
   });
 
+  const previewCsv = trpc.workspace.previewMembersCsv.useMutation({
+    onSuccess: (res, variables) => {
+      setCsvPreviewData({ ...res, rawText: variables.csvData });
+      toast.info("Prévia do CSV gerada com sucesso.");
+    },
+    onError: err => toast.error(err.message),
+  });
+
   const importCsv = trpc.workspace.importMembersCsv.useMutation({
     onSuccess: res => {
       void members.refetch();
+      void invites.refetch();
+      setCsvPreviewData(null);
       toast.success(`Importados com sucesso: ${res.importedCount} membros. Erros/Não encontrados: ${res.errorsCount}`);
     },
     onError: err => toast.error(err.message),
@@ -71,7 +82,7 @@ export default function EquipePage() {
     reader.onload = event => {
       const text = event.target?.result as string;
       if (text) {
-        importCsv.mutate({ csvData: text, role: "USER" });
+        previewCsv.mutate({ csvData: text });
       }
     };
     reader.readAsText(file);
@@ -200,11 +211,27 @@ export default function EquipePage() {
                 {inviteMember.data?.inviteLink && <Button type="button" variant="outline" onClick={() => navigator.clipboard?.writeText(inviteMember.data.inviteLink)} className="w-full gap-2"><Copy className="h-4 w-4" /> Copiar link de contingência</Button>}
               </form>
 
-              <div className="space-y-2 border-t pt-4">
+              <div className="space-y-3 border-t pt-4">
                 <p className="text-sm font-semibold">Importar membros em lote (CSV)</p>
-                <p className="text-xs text-muted-foreground">Envie um arquivo CSV com um e-mail por linha de usuários já cadastrados no sistema.</p>
-                <Input type="file" accept=".csv,text/csv" onChange={handleFileUpload} disabled={importCsv.isPending} />
-                {importCsv.isPending && <p className="text-xs text-muted-foreground">Importando membros...</p>}
+                <p className="text-xs text-muted-foreground">Envie um arquivo CSV com um e-mail por linha. Uma prévia será exibida antes da confirmação.</p>
+                <Input type="file" accept=".csv,text/csv" onChange={handleFileUpload} disabled={previewCsv.isPending || importCsv.isPending} />
+                {previewCsv.isPending && <p className="text-xs text-muted-foreground">Analisando arquivo CSV...</p>}
+
+                {csvPreviewData && (
+                  <div className="rounded-lg border bg-muted/50 p-3 space-y-2 text-xs">
+                    <p className="font-semibold text-foreground">Pré-visualização da Importação</p>
+                    <p className="text-green-600 font-medium">✓ Válidos prontos para importar: {csvPreviewData.valid.length}</p>
+                    {csvPreviewData.notFound.length > 0 && <p className="text-amber-600">⚠ Não cadastrados no sistema: {csvPreviewData.notFound.length}</p>}
+                    {csvPreviewData.invalid.length > 0 && <p className="text-red-600">✕ Linhas mal formatadas: {csvPreviewData.invalid.length}</p>}
+
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" onClick={() => importCsv.mutate({ csvData: csvPreviewData.rawText, role: "USER" })} disabled={importCsv.isPending || csvPreviewData.valid.length === 0}>
+                        {importCsv.isPending ? "Importando..." : "Confirmar Importação"}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setCsvPreviewData(null)}>Cancelar</Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
