@@ -332,3 +332,11 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Adicionar rota backend `previewMembersCsv` para validar e classificar e-mails válidos e inválidos
 - [x] Construir modal/etapa de pré-visualização na tela de equipe antes de confirmar a importação
 - [x] Criar testes Vitest para a pré-visualização de CSV
+
+
+## Novas Funcionalidades — Template CSV, Auditoria de Importação e Exclusão em Lote
+- [x] Adicionar registro de auditoria nas mutações `importMembersCsv` e exclusão em lote de membros
+- [x] Adicionar rota backend `removeMembersBatch` com proteção contra remoção do OWNER
+- [x] Construir botão de download de modelo CSV na tela de equipe
+- [x] Implementar seleção múltipla de membros na tabela e botão de exclusão em lote
+- [x] Criar testes Vitest para exclusão em lote protegida e auditoria de importação

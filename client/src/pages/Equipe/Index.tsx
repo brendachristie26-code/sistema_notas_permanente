@@ -19,6 +19,7 @@ export default function EquipePage() {
   const workspaces = trpc.workspace.listMyWorkspaces.useQuery();
   const members = trpc.workspace.listMembers.useQuery(undefined, { retry: false });
   const [invitePage, setInvitePage] = useState(1);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
   const [csvPreviewData, setCsvPreviewData] = useState<{ valid: string[]; notFound: string[]; invalid: string[]; total: number; rawText: string } | null>(null);
   const invites = trpc.workspace.listInvites.useQuery({ page: invitePage, pageSize: 5 }, { retry: false });
   const createWorkspace = trpc.workspace.create.useMutation({
@@ -65,6 +66,15 @@ export default function EquipePage() {
     onError: err => toast.error(err.message),
   });
 
+  const removeBatch = trpc.workspace.removeMembersBatch.useMutation({
+    onSuccess: res => {
+      void members.refetch();
+      setSelectedMemberIds([]);
+      toast.success(`${res.removedCount} membros removidos com sucesso.`);
+    },
+    onError: err => toast.error(err.message),
+  });
+
   const importCsv = trpc.workspace.importMembersCsv.useMutation({
     onSuccess: res => {
       void members.refetch();
@@ -74,6 +84,18 @@ export default function EquipePage() {
     },
     onError: err => toast.error(err.message),
   });
+
+  const handleDownloadCsvTemplate = () => {
+    const template = "usuario1@empresa.com\nusuario2@empresa.com\n";
+    const blob = new Blob([template], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "modelo-membros.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Modelo CSV baixado com sucesso!");
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -184,23 +206,46 @@ export default function EquipePage() {
               ) : members.isLoading ? (
                 <p className="text-sm text-muted-foreground">Carregando membros...</p>
               ) : (
-                <div className="space-y-2">
-                  {members.data?.map(member => (
-                    <div key={member.id} className="flex items-center justify-between rounded-lg border p-3">
-                      <div><p className="font-medium">{member.name || "Usuário sem nome"}</p><p className="text-xs text-muted-foreground">{member.email}</p></div>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={member.role}
-                          onChange={e => updateMemberRole.mutate({ memberId: member.id, role: e.target.value as "ADMIN" | "USER" })}
-                          className="h-8 rounded-md border bg-background px-2 text-xs font-semibold"
-                        >
-                          <option value="USER">USER</option>
-                          <option value="ADMIN">ADMIN</option>
-                          {member.role === "OWNER" && <option value="OWNER" disabled>OWNER</option>}
-                        </select>
-                      </div>
+                <div className="space-y-3">
+                  {selectedMemberIds.length > 0 && (
+                    <div className="flex items-center justify-between rounded-lg bg-muted p-2 text-xs">
+                      <span>{selectedMemberIds.length} selecionados</span>
+                      <Button size="sm" variant="destructive" onClick={() => removeBatch.mutate({ memberIds: selectedMemberIds })} disabled={removeBatch.isPending}>
+                        {removeBatch.isPending ? "Removendo..." : "Remover Selecionados"}
+                      </Button>
                     </div>
-                  ))}
+                  )}
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {members.data?.map(member => (
+                      <div key={member.id} className="flex items-center justify-between rounded-lg border p-3">
+                        <div className="flex items-center gap-3">
+                          {member.role !== "OWNER" && (
+                            <input
+                              type="checkbox"
+                              checked={selectedMemberIds.includes(member.id)}
+                              onChange={e => {
+                                if (e.target.checked) setSelectedMemberIds([...selectedMemberIds, member.id]);
+                                else setSelectedMemberIds(selectedMemberIds.filter(id => id !== member.id));
+                              }}
+                              className="h-4 w-4 rounded border-gray-300"
+                            />
+                          )}
+                          <div><p className="font-medium">{member.name || "Usuário sem nome"}</p><p className="text-xs text-muted-foreground">{member.email}</p></div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={member.role}
+                            onChange={e => updateMemberRole.mutate({ memberId: member.id, role: e.target.value as "ADMIN" | "USER" })}
+                            className="h-8 rounded-md border bg-background px-2 text-xs font-semibold"
+                          >
+                            <option value="USER">USER</option>
+                            <option value="ADMIN">ADMIN</option>
+                            {member.role === "OWNER" && <option value="OWNER" disabled>OWNER</option>}
+                          </select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               <form onSubmit={handleInvite} className="space-y-3 border-t pt-4">
@@ -212,7 +257,12 @@ export default function EquipePage() {
               </form>
 
               <div className="space-y-3 border-t pt-4">
-                <p className="text-sm font-semibold">Importar membros em lote (CSV)</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">Importar membros em lote (CSV)</p>
+                  <Button size="sm" variant="outline" onClick={handleDownloadCsvTemplate} className="text-xs h-7 gap-1">
+                    Baixar Modelo CSV
+                  </Button>
+                </div>
                 <p className="text-xs text-muted-foreground">Envie um arquivo CSV com um e-mail por linha. Uma prévia será exibida antes da confirmação.</p>
                 <Input type="file" accept=".csv,text/csv" onChange={handleFileUpload} disabled={previewCsv.isPending || importCsv.isPending} />
                 {previewCsv.isPending && <p className="text-xs text-muted-foreground">Analisando arquivo CSV...</p>}

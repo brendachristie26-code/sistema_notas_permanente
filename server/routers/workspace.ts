@@ -466,4 +466,30 @@ export const workspaceRouter = router({
 
       return { valid, notFound, invalid, total: lines.length };
     }),
+
+  removeMembersBatch: adminTenantProcedure
+    .input(z.object({ memberIds: z.array(z.number()) }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      let removedCount = 0;
+      for (const memberId of input.memberIds) {
+        const member = await db.select().from(workspaceMembers).where(eq(workspaceMembers.id, memberId)).limit(1);
+        if (member.length > 0 && member[0].role !== "OWNER") {
+          await db.delete(workspaceMembers).where(eq(workspaceMembers.id, memberId));
+          removedCount++;
+          await db.insert(auditLog).values({
+            workspaceId: ctx.workspaceId,
+            userId: ctx.user!.id,
+            acao: "deletar",
+            entidade: "membro",
+            entidadeId: memberId,
+            detalhes: `Membro ID ${memberId} removido em lote.`,
+          });
+        }
+      }
+
+      return { success: true, removedCount };
+    }),
 });
