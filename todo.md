@@ -293,3 +293,10 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Criar WorkspaceProvider/store real e centralizar o workspace ativo
 - [x] Completar retorno pós-login e consumo automático de pending-invite-token
 - [x] Cobrir criação de convite, aceite válido e rejeição por e-mail divergente nos testes
+
+
+## Novas Funcionalidades — Gestão de Convites e Auditoria Aprimorada
+- [x] Adicionar rota backend `listInvites` e `revokeInvite` com validação de tenant
+- [x] Construir interface de convites pendentes com botão para copiar link e revogar
+- [x] Desenvolver tela dedicada de auditoria do workspace com filtros e listagem completa
+- [x] Criar testes Vitest para listagem e revogação de convites

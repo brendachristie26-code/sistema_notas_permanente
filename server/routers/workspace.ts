@@ -2,7 +2,7 @@ import { router, adminTenantProcedure, protectedProcedure, publicProcedure } fro
 import { z } from "zod";
 import { getDb } from "../db";
 import { workspaceMembers, workspaces, workspaceInvites, users, auditLog } from "../../drizzle/schema";
-import { and, eq, desc } from "drizzle-orm";
+import { and, eq, desc, gte, lte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { sendInviteEmail } from "../_core/inviteEmail";
 
@@ -185,12 +185,49 @@ export const workspaceRouter = router({
     return members;
   }),
 
+  listInvites: adminTenantProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+
+    return db
+      .select()
+      .from(workspaceInvites)
+      .where(and(eq(workspaceInvites.workspaceId, ctx.workspaceId), eq(workspaceInvites.status, "PENDENTE")))
+      .orderBy(desc(workspaceInvites.createdAt));
+  }),
+
+  revokeInvite: adminTenantProcedure
+    .input(z.object({ inviteId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const invite = await db
+        .select()
+        .from(workspaceInvites)
+        .where(and(eq(workspaceInvites.id, input.inviteId), eq(workspaceInvites.workspaceId, ctx.workspaceId)))
+        .limit(1);
+
+      if (invite.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Convite não encontrado." });
+      }
+
+      await db
+        .update(workspaceInvites)
+        .set({ status: "EXPIRADO" })
+        .where(eq(workspaceInvites.id, input.inviteId));
+
+      return { success: true };
+    }),
+
   // Auditoria específica do workspace
   listAuditLogs: adminTenantProcedure
     .input(
       z.object({
         acao: z.string().optional(),
         entidade: z.string().optional(),
+        dataInicio: z.date().optional(),
+        dataFim: z.date().optional(),
       }).optional()
     )
     .query(async ({ input, ctx }) => {
@@ -200,6 +237,12 @@ export const workspaceRouter = router({
       const conditions = [eq(auditLog.workspaceId, ctx.workspaceId)];
       if (input?.acao) conditions.push(eq(auditLog.acao, input.acao));
       if (input?.entidade) conditions.push(eq(auditLog.entidade, input.entidade));
+      if (input?.dataInicio) conditions.push(gte(auditLog.createdAt, input.dataInicio));
+      if (input?.dataFim) {
+        const endOfDay = new Date(input.dataFim);
+        endOfDay.setHours(23, 59, 59, 999);
+        conditions.push(lte(auditLog.createdAt, endOfDay));
+      }
 
       const logs = await db
         .select({
@@ -216,7 +259,7 @@ export const workspaceRouter = router({
         .innerJoin(users, eq(auditLog.userId, users.id))
         .where(and(...conditions))
         .orderBy(desc(auditLog.createdAt))
-        .limit(100);
+        .limit(500);
 
       return logs;
     }),

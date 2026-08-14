@@ -7,10 +7,10 @@ import { formatDate } from "@/lib/utils";
 import { Filter, Download } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useLocation } from "wouter";
+import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 export default function AuditoriaList() {
-
+  const { activeWorkspace } = useWorkspace();
   const [filtroAcao, setFiltroAcao] = useState<string>("");
   const [filtroEntidade, setFiltroEntidade] = useState<string>("");
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
@@ -19,6 +19,8 @@ export default function AuditoriaList() {
   const { data: logs, isLoading } = trpc.workspace.listAuditLogs.useQuery({
     acao: filtroAcao || undefined,
     entidade: filtroEntidade || undefined,
+    dataInicio: filtroDataInicio ? new Date(filtroDataInicio) : undefined,
+    dataFim: filtroDataFim ? new Date(filtroDataFim) : undefined,
   }, { retry: false });
 
   const handleExportCSV = () => {
@@ -30,7 +32,7 @@ export default function AuditoriaList() {
     const headers = ["ID", "Usuário", "Ação", "Entidade", "ID Entidade", "Detalhes", "Data"];
     const rows = logs.map((log: any) => [
       log.id,
-      log.userId,
+      log.userEmail || log.userName || "Usuário desconhecido",
       log.acao,
       log.entidade,
       log.entidadeId,
@@ -72,7 +74,7 @@ export default function AuditoriaList() {
     <DashboardLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Log de Auditoria</h1>
+          <div><h1 className="text-3xl font-bold">Auditoria do Workspace</h1><p className="text-sm text-muted-foreground">Histórico administrativo de {activeWorkspace?.name || "workspace ativo"}</p></div>
           <Button onClick={handleExportCSV} className="gap-2">
             <Download className="w-4 h-4" />
             Exportar CSV
@@ -184,7 +186,7 @@ export default function AuditoriaList() {
                         <p className="text-sm text-gray-600 mb-2">{log.detalhes}</p>
                       )}
                       <p className="text-xs text-gray-500">
-                        Usuário ID: {log.userId} • {formatDate(log.createdAt)}
+                        {log.userName || log.userEmail || "Usuário desconhecido"} • {formatDate(log.createdAt)}
                       </p>
                     </div>
                   </div>

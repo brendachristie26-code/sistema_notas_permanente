@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Building2, Copy, MailPlus, Shield, UsersRound } from "lucide-react";
+import { Building2, Check, Clock3, Copy, MailPlus, Shield, UsersRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ export default function EquipePage() {
   const utils = trpc.useUtils();
   const workspaces = trpc.workspace.listMyWorkspaces.useQuery();
   const members = trpc.workspace.listMembers.useQuery(undefined, { retry: false });
+  const invites = trpc.workspace.listInvites.useQuery(undefined, { retry: false });
   const createWorkspace = trpc.workspace.create.useMutation({
     onSuccess: result => {
       window.localStorage.setItem("active-workspace-id", String(result.workspaceId));
@@ -28,10 +29,18 @@ export default function EquipePage() {
     },
     onError: error => toast.error(error.message),
   });
+  const revokeInvite = trpc.workspace.revokeInvite.useMutation({
+    onSuccess: () => {
+      void invites.refetch();
+      toast.success("Convite revogado.");
+    },
+    onError: error => toast.error(error.message),
+  });
   const inviteMember = trpc.workspace.inviteMember.useMutation({
     onSuccess: result => {
       setEmail("");
       void members.refetch();
+      void invites.refetch();
       toast.success(result.inviteLink ? "Convite criado. Configure o provedor para envio automático." : "Convite enviado.");
       if (result.inviteLink) void navigator.clipboard?.writeText(result.inviteLink);
     },
@@ -115,6 +124,31 @@ export default function EquipePage() {
             </CardContent>
           </Card>
         </div>
+
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="h-5 w-5" /> Convites pendentes</CardTitle></CardHeader>
+          <CardContent>
+            {invites.error ? (
+              <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{invites.error.message}</p>
+            ) : invites.isLoading ? (
+              <p className="text-sm text-muted-foreground">Carregando convites...</p>
+            ) : invites.data?.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum convite pendente neste workspace.</p>
+            ) : (
+              <div className="space-y-3">
+                {invites.data?.map(invite => {
+                  const inviteLink = `${window.location.origin}/convite/${invite.token}`;
+                  return (
+                    <div key={invite.id} className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between">
+                      <div className="min-w-0"><p className="font-medium">{invite.email}</p><p className="text-xs text-muted-foreground">Papel: {invite.role} · Expira em {new Date(invite.expiresAt).toLocaleDateString("pt-BR")}</p><p className="mt-1 truncate text-xs text-muted-foreground">{inviteLink}</p></div>
+                      <div className="flex shrink-0 gap-2"><Button type="button" size="sm" variant="outline" className="gap-2" onClick={() => { void navigator.clipboard?.writeText(inviteLink); toast.success("Link copiado."); }}><Copy className="h-4 w-4" /> Copiar link</Button><Button type="button" size="sm" variant="destructive" className="gap-2" disabled={revokeInvite.isPending} onClick={() => { if (window.confirm("Revogar este convite? O link deixará de funcionar.")) revokeInvite.mutate({ inviteId: invite.id }); }}><XCircle className="h-4 w-4" /> Revogar</Button></div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );

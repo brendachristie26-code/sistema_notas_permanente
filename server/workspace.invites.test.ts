@@ -44,6 +44,25 @@ describe("Workspace invite and audit isolation", () => {
     expect(accepted.workspaceId).toBe(1);
   });
 
+  it("lists and revokes a pending invite before acceptance", async () => {
+    const caller = appRouter.createCaller(createContext());
+    const created = await caller.workspace.inviteMember({
+      email: "pending@example.com",
+      role: "USER",
+      origin: "https://example.com",
+    });
+    const token = created.inviteLink.split("/convite/")[1];
+    const pending = await caller.workspace.listInvites();
+    const invite = pending.find(item => item.token === token);
+    expect(invite).toBeDefined();
+
+    await caller.workspace.revokeInvite({ inviteId: invite!.id });
+    const afterRevoke = await caller.workspace.listInvites();
+    expect(afterRevoke.some(item => item.id === invite!.id)).toBe(false);
+    const invitedCaller = appRouter.createCaller(createContext("pending@example.com"));
+    await expect(invitedCaller.workspace.acceptInvite({ token })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   it("rejects an invite when the authenticated email differs", async () => {
     const ownerCaller = appRouter.createCaller(createContext());
     const created = await ownerCaller.workspace.inviteMember({
