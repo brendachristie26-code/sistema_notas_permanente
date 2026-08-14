@@ -9,28 +9,35 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 export default function AuditoriaList() {
   const { activeWorkspace } = useWorkspace();
   const [filtroAcao, setFiltroAcao] = useState<string>("");
   const [filtroEntidade, setFiltroEntidade] = useState<string>("");
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
   const [filtroDataFim, setFiltroDataFim] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
-  const { data: logs, isLoading } = trpc.workspace.listAuditLogs.useQuery({
+  const { data: auditData, isLoading } = trpc.workspace.listAuditLogs.useQuery({
     acao: filtroAcao || undefined,
     entidade: filtroEntidade || undefined,
     dataInicio: filtroDataInicio ? new Date(filtroDataInicio) : undefined,
     dataFim: filtroDataFim ? new Date(filtroDataFim) : undefined,
+    page,
+    pageSize: 10,
   }, { retry: false });
 
+  const { data: summaryData } = trpc.workspace.auditActivitySummary.useQuery(undefined, { retry: false });
+
   const handleExportCSV = () => {
-    if (!logs || logs.length === 0) {
+    if (!auditData?.items || auditData.items.length === 0) {
       toast.error("Nenhum registro para exportar");
       return;
     }
 
     const headers = ["ID", "Usuário", "Ação", "Entidade", "ID Entidade", "Detalhes", "Data"];
-    const rows = logs.map((log: any) => [
+    const rows = auditData.items.map((log: any) => [
       log.id,
       log.userEmail || log.userName || "Usuário desconhecido",
       log.acao,
@@ -154,14 +161,36 @@ export default function AuditoriaList() {
           </CardContent>
         </Card>
 
-        {/* Listagem */}
+        {summaryData && summaryData.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle>Atividade de Usuários (Analytics)</CardTitle></CardHeader>
+            <CardContent>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={summaryData}>
+                    <XAxis dataKey="name" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="criar" name="Criar" fill="#22c55e" stackId="a" />
+                    <Bar dataKey="atualizar" name="Atualizar" fill="#3b82f6" stackId="a" />
+                    <Bar dataKey="deletar" name="Deletar" fill="#ef4444" stackId="a" />
+                    <Bar dataKey="outros" name="Outros" fill="#8b5cf6" stackId="a" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Listagem com Paginação */}
         {isLoading ? (
           <Card>
             <CardContent className="pt-6">
               <p className="text-center text-gray-500">Carregando...</p>
             </CardContent>
           </Card>
-        ) : !logs || logs.length === 0 ? (
+        ) : !auditData || auditData.items.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
               <p className="text-center text-gray-500">Nenhum registro de auditoria encontrado</p>
@@ -169,7 +198,7 @@ export default function AuditoriaList() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {logs.map((log: any) => (
+            {auditData.items.map((log: any) => (
               <Card key={log.id}>
                 <CardContent className="pt-6">
                   <div className="flex justify-between items-start">
@@ -193,6 +222,15 @@ export default function AuditoriaList() {
                 </CardContent>
               </Card>
             ))}
+            {auditData.total > pageSize && (
+              <div className="flex items-center justify-between pt-4">
+                <p className="text-sm text-muted-foreground">Exibindo {(page - 1) * pageSize + 1} a {Math.min(page * pageSize, auditData.total)} de {auditData.total} registros</p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Anterior</Button>
+                  <Button variant="outline" size="sm" disabled={page * pageSize >= auditData.total} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

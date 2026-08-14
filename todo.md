@@ -300,3 +300,12 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Construir interface de convites pendentes com botão para copiar link e revogar
 - [x] Desenvolver tela dedicada de auditoria do workspace com filtros e listagem completa
 - [x] Criar testes Vitest para listagem e revogação de convites
+
+
+## Novas Funcionalidades — Analytics de Auditoria, Papéis e Paginação
+- [x] Adicionar rota backend `updateMemberRole` para alterar papéis de membros do workspace com proteção de proprietário
+- [x] Adicionar rota backend paginada para listagem de convites e logs de auditoria com estatísticas por usuário
+- [x] Construir gráficos analíticos de atividade por usuário na tela de auditoria
+- [x] Implementar controles de paginação e ordenação nas tabelas de convites e auditoria
+- [x] Adicionar controles para alterar papéis diretamente na tela de equipe
+- [x] Criar testes Vitest para alteração de papéis e paginação

@@ -53,12 +53,12 @@ describe("Workspace invite and audit isolation", () => {
     });
     const token = created.inviteLink.split("/convite/")[1];
     const pending = await caller.workspace.listInvites();
-    const invite = pending.find(item => item.token === token);
+    const invite = pending.items.find((item: any) => item.token === token);
     expect(invite).toBeDefined();
 
     await caller.workspace.revokeInvite({ inviteId: invite!.id });
     const afterRevoke = await caller.workspace.listInvites();
-    expect(afterRevoke.some(item => item.id === invite!.id)).toBe(false);
+    expect(afterRevoke.items.some((item: any) => item.id === invite!.id)).toBe(false);
     const invitedCaller = appRouter.createCaller(createContext("pending@example.com"));
     await expect(invitedCaller.workspace.acceptInvite({ token })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
@@ -77,7 +77,7 @@ describe("Workspace invite and audit isolation", () => {
 
   it("returns logs for the active workspace and denies an unrelated workspace", async () => {
     const result = await appRouter.createCaller(createContext()).workspace.listAuditLogs();
-    expect(Array.isArray(result)).toBe(true);
+    expect(Array.isArray(result.items)).toBe(true);
     await expect(appRouter.createCaller(createContext("brenda.christie26@gmail.com", 999)).workspace.listAuditLogs()).rejects.toMatchObject({
       code: "FORBIDDEN",
     });

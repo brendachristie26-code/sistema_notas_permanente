@@ -185,16 +185,66 @@ export const workspaceRouter = router({
     return members;
   }),
 
-  listInvites: adminTenantProcedure.query(async ({ ctx }) => {
-    const db = await getDb();
-    if (!db) return [];
+  updateMemberRole: adminTenantProcedure
+    .input(z.object({ memberId: z.number(), role: z.enum(["ADMIN", "USER"]) }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-    return db
-      .select()
-      .from(workspaceInvites)
-      .where(and(eq(workspaceInvites.workspaceId, ctx.workspaceId), eq(workspaceInvites.status, "PENDENTE")))
-      .orderBy(desc(workspaceInvites.createdAt));
-  }),
+      const target = await db
+        .select()
+        .from(workspaceMembers)
+        .where(and(eq(workspaceMembers.id, input.memberId), eq(workspaceMembers.workspaceId, ctx.workspaceId)))
+        .limit(1);
+
+      if (target.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Membro não encontrado." });
+      }
+
+      if (target[0].role === "OWNER" && target[0].userId !== ctx.user?.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Não é permitido alterar o papel do proprietário do workspace." });
+      }
+
+      await db
+        .update(workspaceMembers)
+        .set({ role: input.role })
+        .where(eq(workspaceMembers.id, input.memberId));
+
+      return { success: true };
+    }),
+
+  listInvites: adminTenantProcedure
+    .input(
+      z.object({
+        page: z.number().default(1),
+        pageSize: z.number().default(10),
+        sortBy: z.enum(["createdAt", "email"]).default("createdAt"),
+        sortOrder: z.enum(["asc", "desc"]).default("desc"),
+      }).optional()
+    )
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) return { items: [], total: 0 };
+
+      const page = input?.page ?? 1;
+      const pageSize = input?.pageSize ?? 10;
+      const sortBy = input?.sortBy ?? "createdAt";
+      const sortOrder = input?.sortOrder ?? "desc";
+
+      const queryBase = db
+        .select()
+        .from(workspaceInvites)
+        .where(and(eq(workspaceInvites.workspaceId, ctx.workspaceId), eq(workspaceInvites.status, "PENDENTE")));
+
+      const allItems = await queryBase.orderBy(
+        sortOrder === "desc" ? desc(workspaceInvites[sortBy as keyof typeof workspaceInvites._.columns]) : workspaceInvites[sortBy as keyof typeof workspaceInvites._.columns]
+      );
+
+      const total = allItems.length;
+      const items = allItems.slice((page - 1) * pageSize, page * pageSize);
+
+      return { items, total };
+    }),
 
   revokeInvite: adminTenantProcedure
     .input(z.object({ inviteId: z.number() }))
@@ -228,11 +278,13 @@ export const workspaceRouter = router({
         entidade: z.string().optional(),
         dataInicio: z.date().optional(),
         dataFim: z.date().optional(),
+        page: z.number().default(1),
+        pageSize: z.number().default(10),
       }).optional()
     )
     .query(async ({ input, ctx }) => {
       const db = await getDb();
-      if (!db) return [];
+      if (!db) return { items: [], total: 0 };
 
       const conditions = [eq(auditLog.workspaceId, ctx.workspaceId)];
       if (input?.acao) conditions.push(eq(auditLog.acao, input.acao));
@@ -244,7 +296,7 @@ export const workspaceRouter = router({
         conditions.push(lte(auditLog.createdAt, endOfDay));
       }
 
-      const logs = await db
+      const allItems = await db
         .select({
           id: auditLog.id,
           acao: auditLog.acao,
@@ -258,9 +310,44 @@ export const workspaceRouter = router({
         .from(auditLog)
         .innerJoin(users, eq(auditLog.userId, users.id))
         .where(and(...conditions))
-        .orderBy(desc(auditLog.createdAt))
-        .limit(500);
+        .orderBy(desc(auditLog.createdAt));
 
-      return logs;
+      const page = input?.page ?? 1;
+      const pageSize = input?.pageSize ?? 10;
+      const total = allItems.length;
+      const items = allItems.slice((page - 1) * pageSize, page * pageSize);
+
+      return { items, total };
     }),
+
+  auditActivitySummary: adminTenantProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+
+    const logs = await db
+      .select({
+        userName: users.name,
+        userEmail: users.email,
+        acao: auditLog.acao,
+      })
+      .from(auditLog)
+      .innerJoin(users, eq(auditLog.userId, users.id))
+      .where(eq(auditLog.workspaceId, ctx.workspaceId));
+
+    const map: Record<string, { name: string; total: number; criar: number; atualizar: number; deletar: number; outros: number }> = {};
+
+    for (const log of logs) {
+      const key = log.userEmail || log.userName || "Desconhecido";
+      if (!map[key]) {
+        map[key] = { name: key, total: 0, criar: 0, atualizar: 0, deletar: 0, outros: 0 };
+      }
+      map[key].total += 1;
+      if (log.acao === "criar") map[key].criar += 1;
+      else if (log.acao === "atualizar") map[key].atualizar += 1;
+      else if (log.acao === "deletar") map[key].deletar += 1;
+      else map[key].outros += 1;
+    }
+
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  }),
 });

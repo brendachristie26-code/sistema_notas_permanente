@@ -17,7 +17,8 @@ export default function EquipePage() {
   const utils = trpc.useUtils();
   const workspaces = trpc.workspace.listMyWorkspaces.useQuery();
   const members = trpc.workspace.listMembers.useQuery(undefined, { retry: false });
-  const invites = trpc.workspace.listInvites.useQuery(undefined, { retry: false });
+  const [invitePage, setInvitePage] = useState(1);
+  const invites = trpc.workspace.listInvites.useQuery({ page: invitePage, pageSize: 5 }, { retry: false });
   const createWorkspace = trpc.workspace.create.useMutation({
     onSuccess: result => {
       window.localStorage.setItem("active-workspace-id", String(result.workspaceId));
@@ -26,6 +27,13 @@ export default function EquipePage() {
       setWorkspaceSlug("");
       toast.success("Workspace criado e selecionado.");
       window.location.reload();
+    },
+    onError: error => toast.error(error.message),
+  });
+  const updateMemberRole = trpc.workspace.updateMemberRole.useMutation({
+    onSuccess: () => {
+      void members.refetch();
+      toast.success("Papel atualizado com sucesso.");
     },
     onError: error => toast.error(error.message),
   });
@@ -109,7 +117,17 @@ export default function EquipePage() {
                   {members.data?.map(member => (
                     <div key={member.id} className="flex items-center justify-between rounded-lg border p-3">
                       <div><p className="font-medium">{member.name || "Usuário sem nome"}</p><p className="text-xs text-muted-foreground">{member.email}</p></div>
-                      <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">{member.role}</span>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={member.role}
+                          onChange={e => updateMemberRole.mutate({ memberId: member.id, role: e.target.value as "ADMIN" | "USER" })}
+                          className="h-8 rounded-md border bg-background px-2 text-xs font-semibold"
+                        >
+                          <option value="USER">USER</option>
+                          <option value="ADMIN">ADMIN</option>
+                          {member.role === "OWNER" && <option value="OWNER" disabled>OWNER</option>}
+                        </select>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -132,11 +150,11 @@ export default function EquipePage() {
               <p className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{invites.error.message}</p>
             ) : invites.isLoading ? (
               <p className="text-sm text-muted-foreground">Carregando convites...</p>
-            ) : invites.data?.length === 0 ? (
+            ) : !invites.data || invites.data.items.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum convite pendente neste workspace.</p>
             ) : (
               <div className="space-y-3">
-                {invites.data?.map(invite => {
+                {invites.data.items.map(invite => {
                   const inviteLink = `${window.location.origin}/convite/${invite.token}`;
                   return (
                     <div key={invite.id} className="flex flex-col gap-3 rounded-lg border p-4 md:flex-row md:items-center md:justify-between">
@@ -145,6 +163,15 @@ export default function EquipePage() {
                     </div>
                   );
                 })}
+                {invites.data.total > 5 && (
+                  <div className="flex items-center justify-between pt-2">
+                    <p className="text-xs text-muted-foreground">Total de {invites.data.total} convites</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" disabled={invitePage === 1} onClick={() => setInvitePage(p => Math.max(1, p - 1))}>Anterior</Button>
+                      <Button variant="outline" size="sm" disabled={invitePage * 5 >= invites.data.total} onClick={() => setInvitePage(p => p + 1)}>Próxima</Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
