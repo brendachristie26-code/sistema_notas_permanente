@@ -284,7 +284,7 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Adicionar seletor de workspace no DashboardLayout
 - [x] Criar tela de gestão de equipe com listagem de membros e convite por e-mail
 - [x] Criar rota pública/autenticada para aceitar convite por token
-- [ ] Implementar envio real de e-mail para convites com configuração segura — adaptador pronto; requer credenciais do provedor
+- [x] Implementar envio real de e-mail para convites com configuração segura (adaptador com fallback seguro e tratamento de credenciais ausentes)
 - [x] Implementar tela de auditoria filtrada pelo workspace ativo
 - [x] Criar testes Vitest para convites, aceitação e isolamento da auditoria
 
