@@ -135,10 +135,10 @@ export async function getProdutoById(id: number) {
   return result.length > 0 ? result[0] : null;
 }
 
-export async function createProduto(data: InsertProduto) {
+export async function createProduto(data: Omit<InsertProduto, "workspaceId"> & { workspaceId?: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(produtos).values(data);
+  return db.insert(produtos).values({ ...data, workspaceId: data.workspaceId || 1 });
 }
 
 export async function updateProduto(id: number, data: Partial<InsertProduto>) {
@@ -167,10 +167,10 @@ export async function getNotaFiscalById(id: number) {
   return result.length > 0 ? result[0] : null;
 }
 
-export async function createNotaFiscal(data: InsertNotaFiscal) {
+export async function createNotaFiscal(data: Omit<InsertNotaFiscal, "workspaceId"> & { workspaceId?: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(notasFiscais).values(data);
+  return db.insert(notasFiscais).values({ ...data, workspaceId: data.workspaceId || 1 });
 }
 
 export async function updateNotaFiscal(id: number, data: Partial<InsertNotaFiscal>) {
@@ -210,10 +210,10 @@ export async function getPagamentoByNotaId(notaFiscalId: number) {
   return result.length > 0 ? result[0] : null;
 }
 
-export async function createPagamento(data: InsertPagamento) {
+export async function createPagamento(data: Omit<InsertPagamento, "workspaceId"> & { workspaceId?: number }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(pagamentos).values(data);
+  return db.insert(pagamentos).values({ ...data, workspaceId: data.workspaceId || 1 });
 }
 
 export async function updatePagamento(id: number, data: Partial<InsertPagamento>) {
@@ -519,7 +519,8 @@ export async function registrarAuditLog(
   acao: string,
   entidade: string,
   entidadeId: number,
-  detalhes?: string
+  detalhes?: string,
+  workspaceId: number = 1
 ) {
   const db = await getDb();
   if (!db) {
@@ -529,6 +530,7 @@ export async function registrarAuditLog(
 
   try {
     await db.insert(auditLog).values({
+      workspaceId,
       userId,
       acao,
       entidade,

@@ -1,7 +1,9 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router, protectedProcedure, adminProcedure } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure, adminProcedure, tenantProcedure, adminTenantProcedure } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
+import { workspaceRouter } from "./routers/workspace";
 import { z } from "zod";
 import { getDb } from "./db";
 import {
@@ -42,6 +44,7 @@ import { pagamentos, notasFiscais, despesas, auditLog, orcamentos, agentes } fro
 
 export const appRouter = router({
   system: systemRouter,
+  workspace: workspaceRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -54,15 +57,36 @@ export const appRouter = router({
   }),
 
   agentes: router({
-    list: protectedProcedure.query(() => listAgentes()),
-    get: protectedProcedure.input(z.object({ id: z.number() })).query(({ input }) => getAgenteById(input.id)),
-    create: protectedProcedure
+    list: tenantProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db.select().from(agentes).where(and(eq(agentes.workspaceId, ctx.workspaceId), eq(agentes.ativo, 1)));
+    }),
+    get: tenantProcedure.input(z.object({ id: z.number() })).query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const res = await db.select().from(agentes).where(and(eq(agentes.id, input.id), eq(agentes.workspaceId, ctx.workspaceId))).limit(1);
+      return res[0] || null;
+    }),
+    create: tenantProcedure
       .input(z.object({ nome: z.string(), email: z.string().email(), telefone: z.string().optional() }))
-      .mutation(({ input }) => createAgente({ nome: input.nome, email: input.email, telefone: input.telefone })),
-    update: protectedProcedure
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        return db.insert(agentes).values({ ...input, workspaceId: ctx.workspaceId });
+      }),
+    update: tenantProcedure
       .input(z.object({ id: z.number(), nome: z.string().optional(), email: z.string().email().optional(), telefone: z.string().optional() }))
-      .mutation(({ input }) => updateAgente(input.id, { nome: input.nome, email: input.email, telefone: input.telefone })),
-    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(({ input }) => deleteAgente(input.id)),
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        return db.update(agentes).set({ nome: input.nome, email: input.email, telefone: input.telefone }).where(and(eq(agentes.id, input.id), eq(agentes.workspaceId, ctx.workspaceId)));
+      }),
+    delete: tenantProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      return db.update(agentes).set({ ativo: 0 }).where(and(eq(agentes.id, input.id), eq(agentes.workspaceId, ctx.workspaceId)));
+    }),
   }),
 
   produtos: router({
@@ -385,7 +409,7 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database not available");
         const { orcamentos } = await import("../drizzle/schema");
-        const result = await db.insert(orcamentos).values(input);
+        const result = await db.insert(orcamentos).values({ ...input, workspaceId: 1 });
         return result;
       }),
     update: protectedProcedure
@@ -506,6 +530,7 @@ export const appRouter = router({
         } else {
           // Criar nova
           const result = await db.insert(configuracoes).values({
+            workspaceId: 1, // ou do contexto se refatorado
             nomeEmpresa: input.nomeEmpresa || "Minha Empresa",
             ...input,
           });

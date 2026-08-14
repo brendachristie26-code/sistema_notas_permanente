@@ -1,17 +1,10 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { mysqlTable, int, varchar, text, timestamp, mysqlEnum, unique } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
  */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
@@ -26,12 +19,45 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * Workspaces - Organizações/inquilinos do sistema
+ */
+export const workspaces = mysqlTable("workspaces", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slugUrl: varchar("slugUrl", { length: 100 }).notNull().unique(),
+  logoUrl: varchar("logoUrl", { length: 512 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Workspace = typeof workspaces.$inferSelect;
+export type InsertWorkspace = typeof workspaces.$inferInsert;
+
+/**
+ * Workspace Members - Relacionamento N:N entre usuários e workspaces com RBAC
+ */
+export const workspaceMembers = mysqlTable("workspaceMembers", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  workspaceId: int("workspaceId").notNull(),
+  role: mysqlEnum("role", ["OWNER", "ADMIN", "USER"]).default("USER").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  userWorkspaceUnique: unique("user_workspace_unique").on(t.userId, t.workspaceId),
+}));
+
+export type WorkspaceMember = typeof workspaceMembers.$inferSelect;
+export type InsertWorkspaceMember = typeof workspaceMembers.$inferInsert;
+
+/**
  * Agentes - Representantes ou vendedores
  */
 export const agentes = mysqlTable("agentes", {
   id: int("id").autoincrement().primaryKey(),
+  workspaceId: int("workspaceId").notNull(),
   nome: varchar("nome", { length: 255 }).notNull(),
-  email: varchar("email", { length: 320 }).notNull().unique(),
+  email: varchar("email", { length: 320 }).notNull(),
   telefone: varchar("telefone", { length: 20 }),
   ativo: int("ativo").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -46,6 +72,7 @@ export type InsertAgente = typeof agentes.$inferInsert;
  */
 export const produtos = mysqlTable("produtos", {
   id: int("id").autoincrement().primaryKey(),
+  workspaceId: int("workspaceId").notNull(),
   nome: varchar("nome", { length: 255 }).notNull(),
   descricao: text("descricao"),
   precoUnitario: int("precoUnitario").notNull(),
@@ -62,7 +89,8 @@ export type InsertProduto = typeof produtos.$inferInsert;
  */
 export const notasFiscais = mysqlTable("notasFiscais", {
   id: int("id").autoincrement().primaryKey(),
-  numero: varchar("numero", { length: 100 }).notNull().unique(),
+  workspaceId: int("workspaceId").notNull(),
+  numero: varchar("numero", { length: 100 }).notNull(),
   agenteId: int("agenteId").notNull(),
   produtoId: int("produtoId").notNull(),
   quantidade: int("quantidade").notNull().default(1),
@@ -84,13 +112,13 @@ export type InsertNotaFiscal = typeof notasFiscais.$inferInsert;
  */
 export const pagamentos = mysqlTable("pagamentos", {
   id: int("id").autoincrement().primaryKey(),
+  workspaceId: int("workspaceId").notNull(),
   notaFiscalId: int("notaFiscalId").notNull(),
   status: mysqlEnum("status", ["Pendente", "Pago", "Cancelado"]).default("Pendente").notNull(),
   dataVencimento: timestamp("dataVencimento").notNull(),
   dataPagamento: timestamp("dataPagamento"),
   observacoes: text("observacoes"),
-  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }).unique(),
-  // Campos para Pix Nativo
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
   pixTxid: varchar("pixTxid", { length: 255 }),
   pixQrCode: text("pixQrCode"),
   pixCopiaCola: text("pixCopiaCola"),
@@ -106,7 +134,8 @@ export type InsertPagamento = typeof pagamentos.$inferInsert;
  */
 export const orcamentos = mysqlTable("orcamentos", {
   id: int("id").autoincrement().primaryKey(),
-  numero: varchar("numero", { length: 100 }).notNull().unique(),
+  workspaceId: int("workspaceId").notNull(),
+  numero: varchar("numero", { length: 100 }).notNull(),
   agenteId: int("agenteId").notNull(),
   produtoId: int("produtoId").notNull(),
   quantidade: int("quantidade").notNull().default(1),
@@ -119,7 +148,7 @@ export const orcamentos = mysqlTable("orcamentos", {
   arquivoPdfUrl: varchar("arquivoPdfUrl", { length: 512 }),
   arquivoPdfKey: varchar("arquivoPdfKey", { length: 512 }),
   tokenPublico: varchar("tokenPublico", { length: 64 }).unique(),
-  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }).unique(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -132,6 +161,7 @@ export type InsertOrcamento = typeof orcamentos.$inferInsert;
  */
 export const auditLog = mysqlTable("auditLog", {
   id: int("id").autoincrement().primaryKey(),
+  workspaceId: int("workspaceId").notNull(),
   userId: int("userId").notNull(),
   acao: varchar("acao", { length: 100 }).notNull(),
   entidade: varchar("entidade", { length: 100 }).notNull(),
@@ -144,10 +174,11 @@ export type AuditLog = typeof auditLog.$inferSelect;
 export type InsertAuditLog = typeof auditLog.$inferInsert;
 
 /**
- * Configurações da Empresa - Logo, nome, dados da empresa
+ * Configurações da Empresa - Logo, nome, dados da empresa por workspace
  */
 export const configuracoes = mysqlTable("configuracoes", {
   id: int("id").autoincrement().primaryKey(),
+  workspaceId: int("workspaceId").notNull().unique(),
   nomeEmpresa: varchar("nomeEmpresa", { length: 255 }).notNull(),
   logoUrl: varchar("logoUrl", { length: 512 }),
   logoKey: varchar("logoKey", { length: 512 }),
@@ -168,6 +199,7 @@ export type InsertConfiguracao = typeof configuracoes.$inferInsert;
  */
 export const despesas = mysqlTable("despesas", {
   id: int("id").autoincrement().primaryKey(),
+  workspaceId: int("workspaceId").notNull(),
   descricao: varchar("descricao", { length: 255 }).notNull(),
   categoria: mysqlEnum("categoria", ["Fornecedor", "Fixo", "Variável", "Imposto", "Outro"]).notNull(),
   valor: int("valor").notNull(),
