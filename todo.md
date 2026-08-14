@@ -309,3 +309,11 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Implementar controles de paginação e ordenação nas tabelas de convites e auditoria
 - [x] Adicionar controles para alterar papéis diretamente na tela de equipe
 - [x] Criar testes Vitest para alteração de papéis e paginação
+
+
+## Novas Funcionalidades — Filtros Temporais, Busca e Exportação Avançada
+- [x] Adicionar parâmetro de busca textual e filtro de período em `auditActivitySummary` e `listAuditLogs` no backend
+- [x] Construir botões de filtro rápido (7d, 30d, 90d) e barra de pesquisa na tela de auditoria
+- [x] Implementar exportação de relatório em PDF e CSV na tela de auditoria e relatório consolidado da equipe em PDF
+- [x] Criar testes Vitest para busca textual e filtros temporais de auditoria
+- [x] Criar testes Vitest para busca textual e filtros temporais de auditoria

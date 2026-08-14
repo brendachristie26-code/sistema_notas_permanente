@@ -1,19 +1,24 @@
-import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { formatDate } from "@/lib/utils";
-import { Filter, Download } from "lucide-react";
+import { Filter, Download, Search, FileText } from "lucide-react";
 import { useState } from "react";
+import { DashboardLayout } from "@/components/DashboardLayout";
 import { toast } from "sonner";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
+import jsPDF from "jspdf";
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+
 export default function AuditoriaList() {
   const { activeWorkspace } = useWorkspace();
   const [filtroAcao, setFiltroAcao] = useState<string>("");
   const [filtroEntidade, setFiltroEntidade] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [periodDays, setPeriodDays] = useState<number>(30);
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
   const [filtroDataFim, setFiltroDataFim] = useState<string>("");
   const [page, setPage] = useState(1);
@@ -22,13 +27,14 @@ export default function AuditoriaList() {
   const { data: auditData, isLoading } = trpc.workspace.listAuditLogs.useQuery({
     acao: filtroAcao || undefined,
     entidade: filtroEntidade || undefined,
+    search: searchTerm || undefined,
     dataInicio: filtroDataInicio ? new Date(filtroDataInicio) : undefined,
     dataFim: filtroDataFim ? new Date(filtroDataFim) : undefined,
     page,
-    pageSize: 10,
+    pageSize,
   }, { retry: false });
 
-  const { data: summaryData } = trpc.workspace.auditActivitySummary.useQuery(undefined, { retry: false });
+  const { data: summaryData } = trpc.workspace.auditActivitySummary.useQuery({ days: periodDays }, { retry: false });
 
   const handleExportCSV = () => {
     if (!auditData?.items || auditData.items.length === 0) {
@@ -59,7 +65,45 @@ export default function AuditoriaList() {
     link.download = `auditoria-${Date.now()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success("Arquivo exportado com sucesso!");
+    toast.success("Arquivo CSV exportado com sucesso!");
+  };
+
+  const handleExportPDF = () => {
+    if (!auditData?.items || auditData.items.length === 0) {
+      toast.error("Nenhum registro para exportar");
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text(`Relatório de Auditoria - ${activeWorkspace?.name || "Workspace"}`, 14, 20);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, 14, 28);
+
+    let y = 38;
+    auditData.items.slice(0, 25).forEach((log: any, idx: number) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFont("helvetica", "bold");
+      doc.text(`${idx + 1}. [${log.acao.toUpperCase()}] ${log.entidade} (#${log.entidadeId})`, 14, y);
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      doc.text(`Usuário: ${log.userEmail || log.userName || "N/A"} | Data: ${formatDate(log.createdAt)}`, 18, y);
+      y += 6;
+      if (log.detalhes) {
+        doc.text(`Detalhes: ${log.detalhes}`, 18, y);
+        y += 6;
+      }
+      y += 4;
+    });
+
+    doc.save(`auditoria-${Date.now()}.pdf`);
+    toast.success("Relatório PDF gerado com sucesso!");
   };
 
   const getAcaoBadgeColor = (acao: string) => {
@@ -70,8 +114,8 @@ export default function AuditoriaList() {
         return "bg-blue-100 text-blue-800";
       case "deletar":
         return "bg-red-100 text-red-800";
-      case "visualizar":
-        return "bg-gray-100 text-gray-800";
+      case "aceitar":
+        return "bg-purple-100 text-purple-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -80,49 +124,64 @@ export default function AuditoriaList() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div><h1 className="text-3xl font-bold">Auditoria do Workspace</h1><p className="text-sm text-muted-foreground">Histórico administrativo de {activeWorkspace?.name || "workspace ativo"}</p></div>
-          <Button onClick={handleExportCSV} className="gap-2">
-            <Download className="w-4 h-4" />
-            Exportar CSV
-          </Button>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Auditoria do Workspace</h1>
+            <p className="text-sm text-muted-foreground">Histórico administrativo de {activeWorkspace?.name || "workspace ativo"}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleExportCSV} variant="outline" className="gap-2">
+              <Download className="w-4 h-4" /> CSV
+            </Button>
+            <Button onClick={handleExportPDF} className="gap-2">
+              <FileText className="w-4 h-4" /> PDF
+            </Button>
+          </div>
         </div>
 
-        {/* Filtros */}
+        {/* Filtros e Pesquisa */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Filtros
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2"><Filter className="w-5 h-5" /> Filtros e Busca</span>
+              <div className="flex gap-1">
+                <Button size="sm" variant={periodDays === 7 ? "default" : "outline"} onClick={() => setPeriodDays(7)}>7 dias</Button>
+                <Button size="sm" variant={periodDays === 30 ? "default" : "outline"} onClick={() => setPeriodDays(30)}>30 dias</Button>
+                <Button size="sm" variant={periodDays === 90 ? "default" : "outline"} onClick={() => setPeriodDays(90)}>90 dias</Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Pesquisar nos detalhes, e-mail..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-2">
-                  Ação
-                </label>
                 <select
                   value={filtroAcao}
                   onChange={(e) => setFiltroAcao(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-background text-sm"
                 >
                   <option value="">Todas as ações</option>
                   <option value="criar">Criar</option>
                   <option value="atualizar">Atualizar</option>
                   <option value="deletar">Deletar</option>
-                  <option value="visualizar">Visualizar</option>
+                  <option value="aceitar">Aceitar</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-2">
-                  Entidade
-                </label>
                 <select
                   value={filtroEntidade}
                   onChange={(e) => setFiltroEntidade(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-background text-sm"
                 >
                   <option value="">Todas as entidades</option>
                   <option value="agentes">Agentes</option>
@@ -131,39 +190,22 @@ export default function AuditoriaList() {
                   <option value="pagamentos">Pagamentos</option>
                   <option value="despesas">Despesas</option>
                   <option value="orcamentos">Orçamentos</option>
+                  <option value="workspace">Workspace</option>
                 </select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-2">
-                  Data Início
-                </label>
-                <input
-                  type="date"
-                  value={filtroDataInicio}
-                  onChange={(e) => setFiltroDataInicio(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-2">
-                  Data Fim
-                </label>
-                <input
-                  type="date"
-                  value={filtroDataFim}
-                  onChange={(e) => setFiltroDataFim(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="flex gap-2">
+                <Input type="date" value={filtroDataInicio} onChange={e => setFiltroDataInicio(e.target.value)} className="text-xs" />
+                <Input type="date" value={filtroDataFim} onChange={e => setFiltroDataFim(e.target.value)} className="text-xs" />
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Gráfico Analítico */}
         {summaryData && summaryData.length > 0 && (
           <Card>
-            <CardHeader><CardTitle>Atividade de Usuários (Analytics)</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Atividade por Usuário (Últimos {periodDays} dias)</CardTitle></CardHeader>
             <CardContent>
               <div className="h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">

@@ -276,6 +276,7 @@ export const workspaceRouter = router({
       z.object({
         acao: z.string().optional(),
         entidade: z.string().optional(),
+        search: z.string().optional(),
         dataInicio: z.date().optional(),
         dataFim: z.date().optional(),
         page: z.number().default(1),
@@ -312,17 +313,32 @@ export const workspaceRouter = router({
         .where(and(...conditions))
         .orderBy(desc(auditLog.createdAt));
 
+      const searchTerm = input?.search?.toLowerCase().trim();
+      const filtered = searchTerm
+        ? allItems.filter(item =>
+            (item.detalhes?.toLowerCase() ?? "").includes(searchTerm) ||
+            (item.entidade?.toLowerCase() ?? "").includes(searchTerm) ||
+            (item.userEmail?.toLowerCase() ?? "").includes(searchTerm) ||
+            (item.userName?.toLowerCase() ?? "").includes(searchTerm)
+          )
+        : allItems;
+
       const page = input?.page ?? 1;
       const pageSize = input?.pageSize ?? 10;
-      const total = allItems.length;
-      const items = allItems.slice((page - 1) * pageSize, page * pageSize);
+      const total = filtered.length;
+      const items = filtered.slice((page - 1) * pageSize, page * pageSize);
 
       return { items, total };
     }),
 
-  auditActivitySummary: adminTenantProcedure.query(async ({ ctx }) => {
+  auditActivitySummary: adminTenantProcedure
+    .input(z.object({ days: z.number().default(30) }).optional())
+    .query(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) return [];
+
+    const days = input?.days ?? 30;
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     const logs = await db
       .select({
@@ -332,7 +348,7 @@ export const workspaceRouter = router({
       })
       .from(auditLog)
       .innerJoin(users, eq(auditLog.userId, users.id))
-      .where(eq(auditLog.workspaceId, ctx.workspaceId));
+      .where(and(eq(auditLog.workspaceId, ctx.workspaceId), gte(auditLog.createdAt, cutoff)));
 
     const map: Record<string, { name: string; total: number; criar: number; atualizar: number; deletar: number; outros: number }> = {};
 

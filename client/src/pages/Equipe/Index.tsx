@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Building2, Check, Clock3, Copy, MailPlus, Shield, UsersRound, XCircle } from "lucide-react";
+import { Building2, Check, Clock3, Copy, FileText, MailPlus, Shield, UsersRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
+import jsPDF from "jspdf";
 
 export default function EquipePage() {
   const [, setLocation] = useLocation();
@@ -65,6 +66,39 @@ export default function EquipePage() {
     inviteMember.mutate({ email, role, origin: window.location.origin });
   };
 
+  const handleExportTeamPDF = () => {
+    if (!members.data || members.data.length === 0) {
+      toast.error("Nenhum membro para exportar");
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("Relatório Consolidado da Equipe", 14, 20);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, 14, 28);
+
+    let y = 38;
+    members.data.forEach((member: any, idx: number) => {
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFont("helvetica", "bold");
+      doc.text(`${idx + 1}. ${member.name || "Sem Nome"} (${member.email})`, 14, y);
+      y += 6;
+      doc.setFont("helvetica", "normal");
+      doc.text(`Papel: ${member.role} | ID de Usuário: ${member.userId}`, 18, y);
+      y += 8;
+    });
+
+    doc.save(`equipe-relatorio-${Date.now()}.pdf`);
+    toast.success("Relatório PDF da equipe gerado com sucesso!");
+  };
+
   return (
     <DashboardLayout>
       <div className="mx-auto max-w-6xl space-y-6">
@@ -74,9 +108,14 @@ export default function EquipePage() {
             <h1 className="text-3xl font-bold tracking-tight">Equipe e Workspaces</h1>
             <p className="mt-1 text-muted-foreground">Gerencie organizações, acessos e convites com escopo isolado.</p>
           </div>
-          <Button variant="outline" onClick={() => setLocation("/auditoria")} className="gap-2">
-            <Shield className="h-4 w-4" /> Auditoria do workspace
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleExportTeamPDF} variant="outline" className="gap-2">
+              <FileText className="h-4 w-4" /> Relatório PDF da Equipe
+            </Button>
+            <Button variant="outline" onClick={() => setLocation("/auditoria")} className="gap-2">
+              <Shield className="h-4 w-4" /> Auditoria
+            </Button>
+          </div>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
