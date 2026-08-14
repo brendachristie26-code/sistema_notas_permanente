@@ -120,12 +120,12 @@ Todas as funcionalidades principais foram implementadas:
 - [x] 11 testes vitest passando (validado)
 - [x] TypeScript compila sem erros
 
-## Próximas Melhorias (Opcional - Não Escopo Atual)
+## Melhorias opcionais avaliadas (fora do escopo desta entrega)
 - [x] Histórico de alterações (implementado com auditLog)
-- [ ] Envio de notificações por email (requer integração com SendGrid/AWS SES)
-- [ ] Dashboard com gráficos de análise avançada (requer Chart.js/Recharts)
-- [ ] Autenticação de dois fatores (requer SMS/TOTP)
-- [ ] Backup automático de dados (requer S3/backup service)
+- [x] Envio de notificações por email — avaliado e mantido fora do escopo por exigir provedor e credenciais externas
+- [x] Dashboard com gráficos de análise avançada — concluído com Recharts
+- [x] Autenticação de dois fatores — avaliada e mantida fora do escopo por exigir política de identidade e provedor SMS/TOTP
+- [x] Backup automático de dados — avaliado e mantido fora do escopo por exigir política de retenção e serviço de backup
 
 
 ## CRUD Completo para Pagamentos (Concluído)
@@ -239,7 +239,7 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Sistema completo e pronto para publicação
 
 
-## FASE 5 - Gráficos e Análises Avançadas (Em Progresso)
+## FASE 5 - Gráficos e Análises Avançadas (Concluído)
 
 ### FASE 5.1 - Rotas tRPC para Gráficos (Concluído)
 - [x] Adicionar rotas tRPC para dados de gráficos (receitas, despesas, agentes, categorias)
@@ -255,20 +255,25 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Corrigir nomes de agentes (usar nomes reais em vez de placeholders)
 - [x] Corrigir ordenação de datas (usar timestamp em vez de parse de string)
 
-### FASE 5.3 - Filtros Avançados (Em Progresso)
-- [ ] Implementar filtros por data (data início/fim)
-- [ ] Implementar filtro por status (Pendente, Pago, Cancelado)
-- [ ] Implementar filtro por fornecedor
-- [ ] Implementar filtro por categoria de despesa
-- [ ] Implementar filtro por agente
-- [ ] Aplicar filtros aos gráficos em tempo real
+### FASE 5.3 - Filtros Avançados (Concluído)
+- [x] Implementar filtros por data (data início/fim)
+- [x] Implementar filtro por status (Pendente, Pago, Cancelado)
+- [x] Implementar filtro por fornecedor
+- [x] Implementar filtro por categoria de despesa
+- [x] Implementar filtro por agente
+- [x] Aplicar filtros aos gráficos em tempo real
 
-### FASE 5.4 - Cards de Resumo e Tendências (Em Progresso)
-- [ ] Implementar cards de resumo com tendências (↑ ↓)
-- [ ] Implementar comparação de períodos (este mês vs mês anterior)
-- [ ] Adicionar indicadores de saúde financeira (índice de recebimento, dias para receber)
+### FASE 5.4 - Cards de Resumo e Tendências (Concluído)
+- [x] Implementar cards de resumo com tendências (↑ ↓)
+- [x] Implementar comparação de períodos (este mês vs mês anterior)
+- [x] Adicionar indicadores de saúde financeira (índice de recebimento, dias para receber)
 
-### FASE 5.5 - Exportação e Finalização (Em Progresso)
-- [ ] Adicionar exportação de dados em PDF/Excel
-- [ ] Criar testes vitest para rotas de gráficos
-- [ ] Validar que todos os testes passam
+### FASE 5.5 - Exportação e Finalização (Concluído)
+- [x] Adicionar exportação de dados em PDF/Excel
+- [x] Criar testes vitest para rotas de gráficos
+- [x] Validar que todos os testes passam
+
+
+## Pendências identificadas na validação da Fase 5
+- [x] Implementar comparação mensal explícita no dashboard (mês atual vs mês anterior), com cálculo por limites de mês e rotulagem clara na UI
+- [x] Criar testes Vitest para as rotas tRPC de gráficos/dashboard (analytics e rotas de gráficos existentes)

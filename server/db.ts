@@ -553,3 +553,196 @@ export async function listAuditLog(entidade?: string) {
   }
   return db.select().from(auditLog).orderBy(desc(auditLog.createdAt));
 }
+
+
+// ===== ANALYTICS AVANÇADOS DO DASHBOARD =====
+export type DashboardAnalyticsFilters = {
+  dataInicio?: Date;
+  dataFim?: Date;
+  status?: "Pendente" | "Pago" | "Cancelado";
+  fornecedor?: string;
+  categoria?: "Fornecedor" | "Fixo" | "Variável" | "Imposto" | "Outro";
+  agenteId?: number;
+  periodo?: "7d" | "30d" | "90d";
+};
+
+export async function getDashboardAnalytics(filters: DashboardAnalyticsFilters = {}) {
+  const db = await getDb();
+  const emptySummary = {
+    receitas: 0,
+    despesas: 0,
+    saldo: 0,
+    totalPendente: 0,
+    indiceRecebimento: 0,
+    diasParaReceber: 0,
+    receitasAnterior: 0,
+    despesasAnterior: 0,
+    saldoAnterior: 0,
+    indiceRecebimentoAnterior: 0,
+    tendencias: { receitas: 0, despesas: 0, saldo: 0, indiceRecebimento: 0 },
+    comparacaoMensal: { mesAtual: "", mesAnterior: "", receitasAtual: 0, receitasAnterior: 0, despesasAtual: 0, despesasAnterior: 0, saldoAtual: 0, saldoAnterior: 0, tendencias: { receitas: 0, despesas: 0, saldo: 0 } },
+  };
+  if (!db) {
+    return {
+      serie: [],
+      despesasPorCategoria: [],
+      topAgentes: [],
+      fornecedores: [],
+      summary: emptySummary,
+      periodo: { inicio: null, fim: null },
+    };
+  }
+
+  const hoje = new Date();
+  const fim = filters.dataFim ? new Date(filters.dataFim) : hoje;
+  fim.setHours(23, 59, 59, 999);
+  let inicio: Date;
+  if (filters.dataInicio) {
+    inicio = new Date(filters.dataInicio);
+    inicio.setHours(0, 0, 0, 0);
+  } else {
+    const dias = filters.periodo === "7d" ? 7 : filters.periodo === "90d" ? 90 : 30;
+    inicio = new Date(fim.getTime() - dias * 24 * 60 * 60 * 1000);
+    inicio.setHours(0, 0, 0, 0);
+  }
+
+  const [pagamentosData, notasData, despesasData, agentesData] = await Promise.all([
+    db.select().from(pagamentos),
+    db.select().from(notasFiscais),
+    db.select().from(despesas),
+    db.select().from(agentes),
+  ]);
+
+  const notasMap = new Map(notasData.map(nota => [nota.id, nota]));
+  const agentesMap = new Map(agentesData.map(agente => [agente.id, agente.nome]));
+  const fornecedores = Array.from(new Set(despesasData.map(despesa => despesa.fornecedor).filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const duration = Math.max(1, fim.getTime() - inicio.getTime());
+  const periodoAnteriorFim = new Date(inicio.getTime() - 1);
+  const periodoAnteriorInicio = new Date(periodoAnteriorFim.getTime() - duration);
+
+  const matchesCommon = (date: Date | null | undefined, start: Date, end: Date) => {
+    if (!date) return false;
+    return date.getTime() >= start.getTime() && date.getTime() <= end.getTime();
+  };
+
+  const calculate = (start: Date, end: Date) => {
+    const selectedPayments = pagamentosData.filter(payment => {
+      const selectedStatus = filters.status ? payment.status === filters.status : payment.status === "Pago";
+      const nota = notasMap.get(payment.notaFiscalId);
+      if (!selectedStatus || !nota) return false;
+      if (filters.agenteId !== undefined && nota.agenteId !== filters.agenteId) return false;
+      const date = payment.status === "Pago" ? payment.dataPagamento : payment.dataVencimento;
+      return matchesCommon(date, start, end);
+    });
+
+    const selectedExpenses = despesasData.filter(expense => {
+      const selectedStatus = filters.status ? expense.status === filters.status : expense.status === "Pago";
+      if (!selectedStatus) return false;
+      if (filters.fornecedor && expense.fornecedor !== filters.fornecedor) return false;
+      if (filters.categoria && expense.categoria !== filters.categoria) return false;
+      return matchesCommon(expense.status === "Pago" ? expense.dataPagamento : expense.dataVencimento, start, end);
+    });
+
+    const receitas = selectedPayments.reduce((total, payment) => total + (notasMap.get(payment.notaFiscalId)?.valorTotal || 0), 0);
+    const despesasTotal = selectedExpenses.reduce((total, expense) => total + expense.valor, 0);
+    const totalPendente = pagamentosData
+      .filter(payment => payment.status === "Pendente")
+      .filter(payment => {
+        const nota = notasMap.get(payment.notaFiscalId);
+        if (!nota || (filters.agenteId !== undefined && nota.agenteId !== filters.agenteId)) return false;
+        return matchesCommon(payment.dataVencimento, start, end);
+      })
+      .reduce((total, payment) => total + (notasMap.get(payment.notaFiscalId)?.valorTotal || 0), 0);
+    const totalPaymentsForRate = pagamentosData.filter(payment => {
+      const nota = notasMap.get(payment.notaFiscalId);
+      if (!nota || (filters.agenteId !== undefined && nota.agenteId !== filters.agenteId)) return false;
+      return matchesCommon(payment.status === "Pago" ? payment.dataPagamento : payment.dataVencimento, start, end);
+    });
+    const paidCount = totalPaymentsForRate.filter(payment => payment.status === "Pago").length;
+    const indiceRecebimento = totalPaymentsForRate.length ? Math.round((paidCount / totalPaymentsForRate.length) * 100) : 0;
+    const paidWithDates = selectedPayments.filter(payment => payment.status === "Pago" && payment.dataPagamento && notasMap.get(payment.notaFiscalId)?.dataEmissao);
+    const diasParaReceber = paidWithDates.length
+      ? Math.round(paidWithDates.reduce((sum, payment) => sum + Math.max(0, (payment.dataPagamento!.getTime() - notasMap.get(payment.notaFiscalId)!.dataEmissao.getTime()) / 86400000), 0) / paidWithDates.length)
+      : 0;
+
+    return { receitas, despesas: despesasTotal, saldo: receitas - despesasTotal, totalPendente, indiceRecebimento, diasParaReceber, selectedPayments, selectedExpenses };
+  };
+
+  const current = calculate(inicio, fim);
+  const previous = calculate(periodoAnteriorInicio, periodoAnteriorFim);
+  const percentageChange = (currentValue: number, previousValue: number) => previousValue === 0 ? (currentValue === 0 ? 0 : 100) : Math.round(((currentValue - previousValue) / Math.abs(previousValue)) * 100);
+  const mesAtualInicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  const mesAtualFim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+  const mesAnteriorInicio = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+  const mesAnteriorFim = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59, 999);
+  const mesAtual = calculate(mesAtualInicio, mesAtualFim);
+  const mesAnterior = calculate(mesAnteriorInicio, mesAnteriorFim);
+  const mesLabel = (date: Date) => date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+
+  const seriesMap: Record<string, { timestamp: number; data: string; receitas: number; despesas: number }> = {};
+  current.selectedPayments.forEach(payment => {
+    const date = payment.status === "Pago" ? payment.dataPagamento : payment.dataVencimento;
+    if (!date) return;
+    const key = date.toISOString().slice(0, 10);
+    if (!seriesMap[key]) seriesMap[key] = { timestamp: date.getTime(), data: date.toLocaleDateString("pt-BR"), receitas: 0, despesas: 0 };
+    seriesMap[key].receitas += notasMap.get(payment.notaFiscalId)?.valorTotal || 0;
+  });
+  current.selectedExpenses.forEach(expense => {
+    const date = expense.status === "Pago" ? expense.dataPagamento : expense.dataVencimento;
+    if (!date) return;
+    const key = date.toISOString().slice(0, 10);
+    if (!seriesMap[key]) seriesMap[key] = { timestamp: date.getTime(), data: date.toLocaleDateString("pt-BR"), receitas: 0, despesas: 0 };
+    seriesMap[key].despesas += expense.valor;
+  });
+
+  const categoryTotals: Record<string, number> = {};
+  current.selectedExpenses.forEach(expense => { categoryTotals[expense.categoria] = (categoryTotals[expense.categoria] || 0) + expense.valor; });
+  const agentTotals: Record<number, number> = {};
+  current.selectedPayments.forEach(payment => {
+    const nota = notasMap.get(payment.notaFiscalId);
+    if (nota) agentTotals[nota.agenteId] = (agentTotals[nota.agenteId] || 0) + nota.valorTotal;
+  });
+
+  return {
+    serie: Object.values(seriesMap).sort((a, b) => a.timestamp - b.timestamp).map(({ timestamp, ...item }) => item),
+    despesasPorCategoria: Object.entries(categoryTotals).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value),
+    topAgentes: Object.entries(agentTotals).map(([agenteId, total]) => ({ agenteId: Number(agenteId), total, name: agentesMap.get(Number(agenteId)) || `Agente ${agenteId}` })).sort((a, b) => b.total - a.total).slice(0, 5),
+    fornecedores,
+    summary: {
+      receitas: current.receitas,
+      despesas: current.despesas,
+      saldo: current.saldo,
+      totalPendente: current.totalPendente,
+      indiceRecebimento: current.indiceRecebimento,
+      diasParaReceber: current.diasParaReceber,
+      receitasAnterior: previous.receitas,
+      despesasAnterior: previous.despesas,
+      saldoAnterior: previous.saldo,
+      indiceRecebimentoAnterior: previous.indiceRecebimento,
+      tendencias: {
+        receitas: percentageChange(current.receitas, previous.receitas),
+        despesas: percentageChange(current.despesas, previous.despesas),
+        saldo: percentageChange(current.saldo, previous.saldo),
+        indiceRecebimento: percentageChange(current.indiceRecebimento, previous.indiceRecebimento),
+      },
+      comparacaoMensal: {
+        mesAtual: mesLabel(mesAtualInicio),
+        mesAnterior: mesLabel(mesAnteriorInicio),
+        receitasAtual: mesAtual.receitas,
+        receitasAnterior: mesAnterior.receitas,
+        despesasAtual: mesAtual.despesas,
+        despesasAnterior: mesAnterior.despesas,
+        saldoAtual: mesAtual.saldo,
+        saldoAnterior: mesAnterior.saldo,
+        tendencias: {
+          receitas: percentageChange(mesAtual.receitas, mesAnterior.receitas),
+          despesas: percentageChange(mesAtual.despesas, mesAnterior.despesas),
+          saldo: percentageChange(mesAtual.saldo, mesAnterior.saldo),
+        },
+      },
+    },
+    periodo: { inicio, fim },
+  };
+}
+
+// ===== AUDIT LOG =====

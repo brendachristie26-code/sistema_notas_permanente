@@ -35,6 +35,7 @@ import {
   getFluxoCaixa,
   registrarAuditLog,
   listAuditLog,
+  getDashboardAnalytics,
 } from "./db";
 import { eq, gte, lte, and } from "drizzle-orm";
 import { pagamentos, notasFiscais, despesas, auditLog, orcamentos, agentes } from "../drizzle/schema";
@@ -267,6 +268,17 @@ export const appRouter = router({
       return Object.entries(porCategoria).map(([name, value]) => ({ name, value }));
     }),
     
+    analytics: protectedProcedure
+      .input(z.object({
+        dataInicio: z.date().optional(),
+        dataFim: z.date().optional(),
+        status: z.enum(["Pendente", "Pago", "Cancelado"]).optional(),
+        fornecedor: z.string().optional(),
+        categoria: z.enum(["Fornecedor", "Fixo", "Variável", "Imposto", "Outro"]).optional(),
+        agenteId: z.number().optional(),
+        periodo: z.enum(["7d", "30d", "90d"]).default("30d"),
+      }).optional())
+      .query(({ input }) => getDashboardAnalytics(input || {})),
     topAgentes: protectedProcedure.query(async () => {
       const db = await getDb();
       if (!db) return [];
