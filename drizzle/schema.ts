@@ -51,6 +51,23 @@ export type WorkspaceMember = typeof workspaceMembers.$inferSelect;
 export type InsertWorkspaceMember = typeof workspaceMembers.$inferInsert;
 
 /**
+ * Workspace Invites - Convites seguros com token para novos membros
+ */
+export const workspaceInvites = mysqlTable("workspaceInvites", {
+  id: int("id").autoincrement().primaryKey(),
+  workspaceId: int("workspaceId").notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  role: mysqlEnum("role", ["ADMIN", "USER"]).default("USER").notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  status: mysqlEnum("status", ["PENDENTE", "ACEITO", "EXPIRADO"]).default("PENDENTE").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WorkspaceInvite = typeof workspaceInvites.$inferSelect;
+export type InsertWorkspaceInvite = typeof workspaceInvites.$inferInsert;
+
+/**
  * Agentes - Representantes ou vendedores
  */
 export const agentes = mysqlTable("agentes", {

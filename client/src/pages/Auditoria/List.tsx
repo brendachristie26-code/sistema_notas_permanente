@@ -5,37 +5,21 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { formatDate } from "@/lib/utils";
 import { Filter, Download } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 
 export default function AuditoriaList() {
-  const { user } = useAuth();
-  const [, setLocation] = useLocation();
+
   const [filtroAcao, setFiltroAcao] = useState<string>("");
   const [filtroEntidade, setFiltroEntidade] = useState<string>("");
   const [filtroDataInicio, setFiltroDataInicio] = useState<string>("");
   const [filtroDataFim, setFiltroDataFim] = useState<string>("");
 
-  // Redirecionar se não for admin
-  useEffect(() => {
-    if (user && user.role !== "admin") {
-      setLocation("/");
-    }
-  }, [user, setLocation]);
-
-  // Não renderizar se não for admin
-  if (user && user.role !== "admin") {
-    return null;
-  }
-
-  const { data: logs, isLoading } = trpc.auditLog.list.useQuery({
+  const { data: logs, isLoading } = trpc.workspace.listAuditLogs.useQuery({
     acao: filtroAcao || undefined,
     entidade: filtroEntidade || undefined,
-    dataInicio: filtroDataInicio ? new Date(filtroDataInicio) : undefined,
-    dataFim: filtroDataFim ? new Date(filtroDataFim) : undefined,
-  });
+  }, { retry: false });
 
   const handleExportCSV = () => {
     if (!logs || logs.length === 0) {

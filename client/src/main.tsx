@@ -5,6 +5,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
+import { WorkspaceProvider } from "./contexts/WorkspaceContext";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
@@ -43,8 +44,12 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
+        const workspaceId = typeof window !== "undefined" ? window.localStorage.getItem("active-workspace-id") : null;
+        const headers = new Headers(init?.headers);
+        if (workspaceId) headers.set("x-workspace-id", workspaceId);
         return globalThis.fetch(input, {
           ...(init ?? {}),
+          headers,
           credentials: "include",
         });
       },
@@ -55,7 +60,9 @@ const trpcClient = trpc.createClient({
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <WorkspaceProvider>
+        <App />
+      </WorkspaceProvider>
     </QueryClientProvider>
   </trpc.Provider>
 );

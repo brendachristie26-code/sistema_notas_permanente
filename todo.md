@@ -277,3 +277,19 @@ Todas as funcionalidades principais foram implementadas:
 ## Pendências identificadas na validação da Fase 5
 - [x] Implementar comparação mensal explícita no dashboard (mês atual vs mês anterior), com cálculo por limites de mês e rotulagem clara na UI
 - [x] Criar testes Vitest para as rotas tRPC de gráficos/dashboard (analytics e rotas de gráficos existentes)
+
+
+## Gestão Multitenant — Workspace, Convites e Auditoria
+- [x] Criar contexto/frontend store para workspace ativo e enviar `x-workspace-id` nas chamadas tRPC
+- [x] Adicionar seletor de workspace no DashboardLayout
+- [x] Criar tela de gestão de equipe com listagem de membros e convite por e-mail
+- [x] Criar rota pública/autenticada para aceitar convite por token
+- [ ] Implementar envio real de e-mail para convites com configuração segura — adaptador pronto; requer credenciais do provedor
+- [x] Implementar tela de auditoria filtrada pelo workspace ativo
+- [x] Criar testes Vitest para convites, aceitação e isolamento da auditoria
+
+
+## Correções de validação do fluxo multitenant
+- [x] Criar WorkspaceProvider/store real e centralizar o workspace ativo
+- [x] Completar retorno pós-login e consumo automático de pending-invite-token
+- [x] Cobrir criação de convite, aceite válido e rejeição por e-mail divergente nos testes

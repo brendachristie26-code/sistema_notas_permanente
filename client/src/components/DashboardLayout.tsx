@@ -21,11 +21,12 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Users, UsersRound } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 import { FileText, DollarSign, BarChart3, Settings, TrendingDown, Shield } from "lucide-react";
 
@@ -40,6 +41,7 @@ const getMenuItems = (userRole?: string) => [
   { icon: BarChart3, label: "Relatórios", path: "/relatorios" },
   ...(userRole === "admin" ? [{ icon: Shield, label: "Auditoria", path: "/auditoria" }] : []),
   { icon: Settings, label: "Configurações", path: "/configuracoes" },
+  { icon: UsersRound, label: "Equipe e Workspaces", path: "/equipe" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -186,6 +188,9 @@ function DashboardLayoutContent({
                   </span>
                 </div>
               ) : null}
+            </div>
+            <div className="px-3 pb-3 group-data-[collapsible=icon]:px-2">
+              <WorkspaceSwitcher compact={isCollapsed} />
             </div>
           </SidebarHeader>
 
