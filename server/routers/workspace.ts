@@ -366,4 +366,75 @@ export const workspaceRouter = router({
 
     return Object.values(map).sort((a, b) => b.total - a.total);
   }),
+
+  auditTrendSummary: adminTenantProcedure
+    .input(z.object({ days: z.number().default(30) }).optional())
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      const days = input?.days ?? 30;
+      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+      const logs = await db
+        .select({
+          createdAt: auditLog.createdAt,
+        })
+        .from(auditLog)
+        .where(and(eq(auditLog.workspaceId, ctx.workspaceId), gte(auditLog.createdAt, cutoff)))
+        .orderBy(auditLog.createdAt);
+
+      const trendMap: Record<string, number> = {};
+      for (const log of logs) {
+        const dateKey = new Date(log.createdAt).toISOString().split("T")[0];
+        trendMap[dateKey] = (trendMap[dateKey] || 0) + 1;
+      }
+
+      return Object.entries(trendMap)
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+    }),
+
+  importMembersCsv: adminTenantProcedure
+    .input(z.object({ csvData: z.string(), role: z.enum(["ADMIN", "USER"]).default("USER") }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const lines = input.csvData.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      let importedCount = 0;
+      let errorsCount = 0;
+
+      for (const line of lines) {
+        const email = line.replace(/^["']|["']$/g, "").trim();
+        if (!email || !email.includes("@")) {
+          errorsCount++;
+          continue;
+        }
+
+        const userRecord = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        if (userRecord.length === 0) {
+          errorsCount++;
+          continue;
+        }
+
+        const userId = userRecord[0].id;
+        const existingMember = await db
+          .select()
+          .from(workspaceMembers)
+          .where(and(eq(workspaceMembers.workspaceId, ctx.workspaceId), eq(workspaceMembers.userId, userId)))
+          .limit(1);
+
+        if (existingMember.length === 0) {
+          await db.insert(workspaceMembers).values({
+            workspaceId: ctx.workspaceId,
+            userId,
+            role: input.role,
+          });
+          importedCount++;
+        }
+      }
+
+      return { success: true, importedCount, errorsCount };
+    }),
 });

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useWorkspace } from "@/contexts/WorkspaceContext";
 import jsPDF from "jspdf";
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function AuditoriaList() {
   const { activeWorkspace } = useWorkspace();
@@ -35,6 +35,7 @@ export default function AuditoriaList() {
   }, { retry: false });
 
   const { data: summaryData } = trpc.workspace.auditActivitySummary.useQuery({ days: periodDays }, { retry: false });
+  const { data: trendData } = trpc.workspace.auditTrendSummary.useQuery({ days: periodDays }, { retry: false });
 
   const handleExportCSV = () => {
     if (!auditData?.items || auditData.items.length === 0) {
@@ -202,28 +203,49 @@ export default function AuditoriaList() {
           </CardContent>
         </Card>
 
-        {/* Gráfico Analítico */}
-        {summaryData && summaryData.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle>Atividade por Usuário (Últimos {periodDays} dias)</CardTitle></CardHeader>
-            <CardContent>
-              <div className="h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={summaryData}>
-                    <XAxis dataKey="name" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="criar" name="Criar" fill="#22c55e" stackId="a" />
-                    <Bar dataKey="atualizar" name="Atualizar" fill="#3b82f6" stackId="a" />
-                    <Bar dataKey="deletar" name="Deletar" fill="#ef4444" stackId="a" />
-                    <Bar dataKey="outros" name="Outros" fill="#8b5cf6" stackId="a" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Gráfico Analítico & Tendência Temporal */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {summaryData && summaryData.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Atividade por Usuário ({periodDays}d)</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={summaryData}>
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="criar" name="Criar" fill="#22c55e" stackId="a" />
+                      <Bar dataKey="atualizar" name="Atualizar" fill="#3b82f6" stackId="a" />
+                      <Bar dataKey="deletar" name="Deletar" fill="#ef4444" stackId="a" />
+                      <Bar dataKey="outros" name="Outros" fill="#8b5cf6" stackId="a" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {trendData && trendData.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Tendência de Atividade Diária ({periodDays}d)</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-72 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData}>
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="count" name="Eventos" stroke="#3b82f6" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
 
         {/* Listagem com Paginação */}
         {isLoading ? (

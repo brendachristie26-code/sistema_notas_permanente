@@ -56,6 +56,27 @@ export default function EquipePage() {
     onError: error => toast.error(error.message),
   });
 
+  const importCsv = trpc.workspace.importMembersCsv.useMutation({
+    onSuccess: res => {
+      void members.refetch();
+      toast.success(`Importados com sucesso: ${res.importedCount} membros. Erros/Não encontrados: ${res.errorsCount}`);
+    },
+    onError: err => toast.error(err.message),
+  });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+      const text = event.target?.result as string;
+      if (text) {
+        importCsv.mutate({ csvData: text, role: "USER" });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleCreateWorkspace = (event: React.FormEvent) => {
     event.preventDefault();
     createWorkspace.mutate({ name: workspaceName, slugUrl: workspaceSlug });
@@ -178,6 +199,13 @@ export default function EquipePage() {
                 <Button type="submit" disabled={inviteMember.isPending || !email} className="w-full gap-2"><MailPlus className="h-4 w-4" />{inviteMember.isPending ? "Criando convite..." : "Criar convite seguro"}</Button>
                 {inviteMember.data?.inviteLink && <Button type="button" variant="outline" onClick={() => navigator.clipboard?.writeText(inviteMember.data.inviteLink)} className="w-full gap-2"><Copy className="h-4 w-4" /> Copiar link de contingência</Button>}
               </form>
+
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-sm font-semibold">Importar membros em lote (CSV)</p>
+                <p className="text-xs text-muted-foreground">Envie um arquivo CSV com um e-mail por linha de usuários já cadastrados no sistema.</p>
+                <Input type="file" accept=".csv,text/csv" onChange={handleFileUpload} disabled={importCsv.isPending} />
+                {importCsv.isPending && <p className="text-xs text-muted-foreground">Importando membros...</p>}
+              </div>
             </CardContent>
           </Card>
         </div>

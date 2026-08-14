@@ -317,3 +317,12 @@ Todas as funcionalidades principais foram implementadas:
 - [x] Implementar exportação de relatório em PDF e CSV na tela de auditoria e relatório consolidado da equipe em PDF
 - [x] Criar testes Vitest para busca textual e filtros temporais de auditoria
 - [x] Criar testes Vitest para busca textual e filtros temporais de auditoria
+
+
+## Novas Funcionalidades — Tendências Temporais, Importação CSV e Toasts
+- [x] Adicionar rota backend `auditTrendSummary` para tendências temporais por dia/semana
+- [x] Adicionar rota backend `importMembersCsv` para importação em lote de membros por e-mail
+- [x] Construir gráfico de linha temporal na tela de auditoria para evolução das atividades
+- [x] Implementar componente de upload e importação CSV de membros na tela de equipe
+- [x] Reforçar toasts de feedback nas exportações PDF/CSV
+- [x] Criar testes Vitest para tendências temporais e importação CSV de membros
